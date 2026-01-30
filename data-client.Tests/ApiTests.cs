@@ -1,4 +1,4 @@
-namespace api.Tests;
+namespace data_client.Tests;
 
 public class ApiTests
 {
