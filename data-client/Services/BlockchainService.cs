@@ -10,6 +10,8 @@ public class BlockchainService : IBlockchainService
 
     public event EventHandler<string>? OnBlockchainDataReceived;
 
+    public bool IsConnected => _blockchainClient.IsConnected;
+
     public BlockchainService(IBlockchainClient blockchainClient, ILogger<BlockchainService> logger)
     {
         _blockchainClient = blockchainClient;

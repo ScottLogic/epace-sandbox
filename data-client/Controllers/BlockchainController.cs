@@ -1,4 +1,3 @@
-using data_client.Clients;
 using data_client.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,16 +8,13 @@ namespace data_client.Controllers;
 public class BlockchainController : ControllerBase, IBlockchainController
 {
     private readonly IBlockchainService _blockchainService;
-    private readonly IBlockchainClient _blockchainClient;
     private readonly ILogger<BlockchainController> _logger;
 
     public BlockchainController(
         IBlockchainService blockchainService,
-        IBlockchainClient blockchainClient,
         ILogger<BlockchainController> logger)
     {
         _blockchainService = blockchainService;
-        _blockchainClient = blockchainClient;
         _logger = logger;
     }
 
@@ -27,7 +23,7 @@ public class BlockchainController : ControllerBase, IBlockchainController
     {
         var status = new
         {
-            IsConnected = _blockchainClient.IsConnected,
+            IsConnected = _blockchainService.IsConnected,
             Timestamp = DateTime.UtcNow
         };
 
