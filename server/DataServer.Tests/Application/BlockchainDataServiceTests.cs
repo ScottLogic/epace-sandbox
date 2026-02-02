@@ -1,85 +1,91 @@
+using DataServer.Application.Interfaces;
 using DataServer.Application.Services;
 using DataServer.Domain.Blockchain;
-using DataServer.Tests.Connectors;
-using DataServer.Tests.Infrastructure;
+using Moq;
 
 namespace DataServer.Tests.Application;
 
 public class BlockchainDataServiceTests
 {
-    private readonly FakeBlockchainDataSource _fakeDataSource;
-    private readonly FakeBlockchainDataRepository _fakeRepository;
+    private readonly Mock<IBlockchainDataSource> _mockDataSource;
+    private readonly Mock<IBlockchainDataRepository> _mockRepository;
     private readonly BlockchainDataService _service;
 
     public BlockchainDataServiceTests()
     {
-        _fakeDataSource = new FakeBlockchainDataSource();
-        _fakeRepository = new FakeBlockchainDataRepository();
-        _service = new BlockchainDataService(_fakeDataSource, _fakeRepository);
+        _mockDataSource = new Mock<IBlockchainDataSource>();
+        _mockRepository = new Mock<IBlockchainDataRepository>();
+        _service = new BlockchainDataService(_mockDataSource.Object, _mockRepository.Object);
     }
 
     [Fact]
-    public async Task StartAsync_ConnectsToDataSource()
+    public async Task StartAsync_CallsConnectAsyncOnDataSource()
     {
         await _service.StartAsync();
 
-        Assert.True(_fakeDataSource.IsConnected);
+        _mockDataSource.Verify(ds => ds.ConnectAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task StopAsync_DisconnectsFromDataSource()
+    public async Task StopAsync_CallsDisconnectAsyncOnDataSource()
     {
         await _service.StartAsync();
 
         await _service.StopAsync();
 
-        Assert.False(_fakeDataSource.IsConnected);
+        _mockDataSource.Verify(ds => ds.DisconnectAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task SubscribeToTradesAsync_DelegatesToDataSource()
+    public async Task SubscribeToTradesAsync_CallsSubscribeOnDataSourceWithCorrectSymbol()
     {
-        await _service.StartAsync();
+        var symbol = Symbol.BtcUsd;
 
-        await _service.SubscribeToTradesAsync(Symbol.BtcUsd);
+        await _service.SubscribeToTradesAsync(symbol);
 
-        Assert.Contains(Symbol.BtcUsd, _fakeDataSource.ActiveSubscriptions);
+        _mockDataSource.Verify(
+            ds => ds.SubscribeToTradesAsync(symbol, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
-    public async Task UnsubscribeFromTradesAsync_DelegatesToDataSource()
+    public async Task UnsubscribeFromTradesAsync_CallsUnsubscribeOnDataSourceWithCorrectSymbol()
     {
-        await _service.StartAsync();
-        await _service.SubscribeToTradesAsync(Symbol.BtcUsd);
+        var symbol = Symbol.BtcUsd;
 
-        await _service.UnsubscribeFromTradesAsync(Symbol.BtcUsd);
+        await _service.UnsubscribeFromTradesAsync(symbol);
 
-        Assert.DoesNotContain(Symbol.BtcUsd, _fakeDataSource.ActiveSubscriptions);
+        _mockDataSource.Verify(
+            ds => ds.UnsubscribeFromTradesAsync(symbol, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
-    public async Task TradeReceived_StoresTradeInRepository()
+    public async Task WhenTradeReceived_CallsAddTradeAsyncOnRepository()
     {
-        await _service.StartAsync();
         var trade = CreateTestTrade(Symbol.BtcUsd);
+        await _service.StartAsync();
 
-        _fakeDataSource.EmitTrade(trade);
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
-        Assert.True(_fakeRepository.StoredTrades.ContainsKey(Symbol.BtcUsd));
-        Assert.Single(_fakeRepository.StoredTrades[Symbol.BtcUsd]);
-        Assert.Equal(trade, _fakeRepository.StoredTrades[Symbol.BtcUsd][0]);
+        _mockRepository.Verify(
+            repo => repo.AddTradeAsync(trade, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
-    public async Task TradeReceived_ReEmitsEventToConsumers()
+    public async Task WhenTradeReceived_RaisesTradeReceivedEvent()
     {
-        await _service.StartAsync();
         var trade = CreateTestTrade(Symbol.EthUsd);
         TradeUpdate? receivedTrade = null;
         _service.TradeReceived += (sender, t) => receivedTrade = t;
+        await _service.StartAsync();
 
-        _fakeDataSource.EmitTrade(trade);
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         Assert.NotNull(receivedTrade);
@@ -87,33 +93,38 @@ public class BlockchainDataServiceTests
     }
 
     [Fact]
-    public async Task GetRecentTradesAsync_ReturnsTradesFromRepository()
+    public async Task GetRecentTradesAsync_CallsGetRecentTradesAsyncOnRepositoryWithCorrectParameters()
     {
-        await _service.StartAsync();
-        var trade1 = CreateTestTrade(Symbol.BtcUsd, "trade-1");
-        var trade2 = CreateTestTrade(Symbol.BtcUsd, "trade-2");
-        _fakeDataSource.EmitTrade(trade1);
-        _fakeDataSource.EmitTrade(trade2);
-        await Task.Delay(50);
+        var symbol = Symbol.BtcUsd;
+        var count = 50;
+        var expectedTrades = new List<TradeUpdate> { CreateTestTrade(symbol) };
+        _mockRepository
+            .Setup(repo => repo.GetRecentTradesAsync(symbol, count, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedTrades);
 
-        var trades = await _service.GetRecentTradesAsync(Symbol.BtcUsd);
+        var result = await _service.GetRecentTradesAsync(symbol, count);
 
-        Assert.Equal(2, trades.Count);
-        Assert.Equal(trade1, trades[0]);
-        Assert.Equal(trade2, trades[1]);
+        _mockRepository.Verify(
+            repo => repo.GetRecentTradesAsync(symbol, count, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        Assert.Equal(expectedTrades, result);
     }
 
     [Fact]
-    public async Task StopAsync_UnwiresEventHandler()
+    public async Task AfterStopAsync_TradeReceivedEventDoesNotCallRepository()
     {
+        var trade = CreateTestTrade(Symbol.BtcUsd);
         await _service.StartAsync();
         await _service.StopAsync();
-        var trade = CreateTestTrade(Symbol.BtcUsd);
 
-        _fakeDataSource.EmitTrade(trade);
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
-        Assert.Empty(_fakeRepository.StoredTrades);
+        _mockRepository.Verify(
+            repo => repo.AddTradeAsync(It.IsAny<TradeUpdate>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     private static TradeUpdate CreateTestTrade(Symbol symbol, string tradeId = "test-trade-1")
