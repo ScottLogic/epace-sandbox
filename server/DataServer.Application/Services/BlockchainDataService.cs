@@ -7,6 +7,7 @@ public class BlockchainDataService : IBlockchainDataService
 {
     private readonly IBlockchainDataSource _dataSource;
     private readonly IBlockchainDataRepository _repository;
+    private EventHandler<TradeUpdate>? _tradeReceivedHandler;
 
     public event EventHandler<TradeUpdate>? TradeReceived;
 
@@ -21,13 +22,14 @@ public class BlockchainDataService : IBlockchainDataService
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        _dataSource.TradeReceived += OnTradeReceived;
+        _tradeReceivedHandler = (sender, trade) => _ = OnTradeReceivedAsync(trade);
+        _dataSource.TradeReceived += _tradeReceivedHandler;
         await _dataSource.ConnectAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        _dataSource.TradeReceived -= OnTradeReceived;
+        _dataSource.TradeReceived -= _tradeReceivedHandler;
         await _dataSource.DisconnectAsync(cancellationToken);
     }
 
@@ -56,7 +58,7 @@ public class BlockchainDataService : IBlockchainDataService
         return await _repository.GetRecentTradesAsync(symbol, count, cancellationToken);
     }
 
-    private async void OnTradeReceived(object? sender, TradeUpdate trade)
+    private async Task OnTradeReceivedAsync(TradeUpdate trade)
     {
         await _repository.AddTradeAsync(trade);
         TradeReceived?.Invoke(this, trade);
