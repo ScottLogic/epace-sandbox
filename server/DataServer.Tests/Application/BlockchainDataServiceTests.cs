@@ -85,6 +85,8 @@ public class BlockchainDataServiceTests
         _service.TradeReceived += (sender, t) => receivedTrade = t;
         await _service.StartAsync();
 
+        Assert.Null(receivedTrade);
+        
         _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
