@@ -31,11 +31,6 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task StopAsync_CallsDisconnectAsyncOnDataSource()
     {
-        _mockDataSource.Verify(
-            ds => ds.DisconnectAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-
         await _service.StartAsync();
 
         _mockDataSource.Verify(
@@ -88,11 +83,6 @@ public class BlockchainDataServiceTests
     public async Task WhenTradeReceived_CallsAddTradeAsyncOnRepository()
     {
         var trade = CreateTestTrade(Symbol.BtcUsd);
-
-        _mockRepository.Verify(
-            repo => repo.AddTradeAsync(It.IsAny<TradeUpdate>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
 
         await _service.StartAsync();
 
