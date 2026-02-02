@@ -68,7 +68,7 @@ public class BlockchainDataServiceTests
         var trade = CreateTestTrade(Symbol.BtcUsd);
         await _service.StartAsync();
 
-        await _mockDataSource.RaiseAsync(ds => ds.TradeReceived += null, this, trade);
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         _mockRepository.Verify(
@@ -85,7 +85,7 @@ public class BlockchainDataServiceTests
         _service.TradeReceived += (sender, t) => receivedTrade = t;
         await _service.StartAsync();
 
-        await _mockDataSource.RaiseAsync(ds => ds.TradeReceived += null, this, trade);
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         Assert.NotNull(receivedTrade);
@@ -118,7 +118,7 @@ public class BlockchainDataServiceTests
         await _service.StartAsync();
         await _service.StopAsync();
 
-        await _mockDataSource.RaiseAsync(ds => ds.TradeReceived += null, this, trade);
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         _mockRepository.Verify(
