@@ -26,8 +26,9 @@ pip install -r requirements.txt
 ## Running the Server
 
 ```bash
+cd simulators/blockchain_api
 source venv/bin/activate
-python -m blockchain_api.app
+flask run
 ```
 
 The server will start on `http://localhost:5000` with the WebSocket endpoint at `ws://localhost:5000/ws`.
@@ -115,8 +116,9 @@ blockchain_api/
 ## Running Tests
 
 ```bash
+cd simulators/blockchain_api
 source venv/bin/activate
-PYTHONPATH=. pytest tests/ -v
+pytest tests/ -v
 ```
 
 ## Configuration
