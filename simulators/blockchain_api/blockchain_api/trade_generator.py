@@ -23,3 +23,7 @@ class TradeGenerator:
             "price": price,
             "trade_id": trade_id,
         }
+
+    @staticmethod
+    def format_trade(trade: dict) -> str:
+        return f"{trade['symbol']} {trade['side'].upper()} {trade['qty']:.8f} @ ${trade['price']:.2f} (id: {trade['trade_id']})"

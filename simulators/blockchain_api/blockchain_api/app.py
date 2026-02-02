@@ -25,6 +25,7 @@ def websocket(ws):
             update = handler.format_trade_update(trade)
             try:
                 ws.send(update)
+                print(f"sent: {TradeGenerator.format_trade(trade)}")
             except Exception:
                 pass
 
@@ -34,8 +35,10 @@ def websocket(ws):
             if message is None:
                 break
 
+            print(f"received: {message}")
             response = handler.handle_message(message)
             ws.send(response)
+            print(f"sent: {response}")
 
             response_data = json.loads(response)
             if response_data.get("event") == "subscribed":
