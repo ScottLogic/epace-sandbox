@@ -43,7 +43,7 @@ server/
 
 - **Domain** has no dependencies (core entities)
 - **Application** depends on Domain (defines interfaces, services)
-- **Connectors** depends on Domain (implements data source interfaces)
+- **Connectors** depends on Domain (implements data hhjsource interfaces)
 - **Infrastructure** depends on Domain and Application (implements repository interfaces)
 - **Api** depends on Application, Connectors, Infrastructure (wires everything together)
 
@@ -57,14 +57,12 @@ External WebSocket ──► IBlockchainDataSource ──► BlockchainDataServi
                             TradeReceived            TradeReceived                    │
                                event                   event                          │
                                  │                        │                           │
-                                 └────────────────────────┼───────────────────────────┤
-                                                          │                           │
-                                                          ▼                           │
-                                                    API / SignalR                     │
-                                                    (real-time push)                  │
-                                                                                      │
-                                                    REST API ◄────────────────────────┘
-                                                    (query cached data)
+                                 └────────────────────────┼───────────────────────────┘
+                                                          │
+                                                          ▼
+                                                    API / SignalR
+                                                    (real-time push)
+
 ```
 
 ## Domain Layer
