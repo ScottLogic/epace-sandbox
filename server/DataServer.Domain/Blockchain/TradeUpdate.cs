@@ -6,7 +6,7 @@ public record TradeUpdate(
     Channel Channel,
     Symbol Symbol,
     DateTimeOffset Timestamp,
-    string Side,
+    Side Side,
     decimal Qty,
     decimal Price,
     string TradeId

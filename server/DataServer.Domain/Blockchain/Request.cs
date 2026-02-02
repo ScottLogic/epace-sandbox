@@ -1,3 +1,3 @@
 namespace DataServer.Domain.Blockchain;
 
-public record Request(Action Action, Channel Channel, Symbol? Symbol = null);
+public record Request(SubscriptionAction Action, Channel Channel, Symbol? Symbol = null);
