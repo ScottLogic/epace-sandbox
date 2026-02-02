@@ -39,7 +39,7 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task SubscribeToTradesAsync_CallsSubscribeOnDataSourceWithCorrectSymbol()
     {
-        var symbol = Symbol.BtcUsd;
+        const Symbol symbol = Symbol.BtcUsd;
 
         await _service.SubscribeToTradesAsync(symbol);
 
@@ -68,7 +68,7 @@ public class BlockchainDataServiceTests
         var trade = CreateTestTrade(Symbol.BtcUsd);
         await _service.StartAsync();
 
-        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
+        await _mockDataSource.RaiseAsync(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         _mockRepository.Verify(
@@ -85,7 +85,7 @@ public class BlockchainDataServiceTests
         _service.TradeReceived += (sender, t) => receivedTrade = t;
         await _service.StartAsync();
 
-        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
+        await _mockDataSource.RaiseAsync(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         Assert.NotNull(receivedTrade);
@@ -118,7 +118,7 @@ public class BlockchainDataServiceTests
         await _service.StartAsync();
         await _service.StopAsync();
 
-        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
+        await _mockDataSource.RaiseAsync(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
         _mockRepository.Verify(
