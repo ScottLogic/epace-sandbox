@@ -21,6 +21,8 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task StartAsync_CallsConnectAsyncOnDataSource()
     {
+        _mockDataSource.Verify(ds => ds.ConnectAsync(It.IsAny<CancellationToken>()), Times.Never);
+
         await _service.StartAsync();
 
         _mockDataSource.Verify(ds => ds.ConnectAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -29,7 +31,17 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task StopAsync_CallsDisconnectAsyncOnDataSource()
     {
+        _mockDataSource.Verify(
+            ds => ds.DisconnectAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
         await _service.StartAsync();
+
+        _mockDataSource.Verify(
+            ds => ds.DisconnectAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
 
         await _service.StopAsync();
 
@@ -40,6 +52,11 @@ public class BlockchainDataServiceTests
     public async Task SubscribeToTradesAsync_CallsSubscribeOnDataSourceWithCorrectSymbol()
     {
         const Symbol symbol = Symbol.BtcUsd;
+
+        _mockDataSource.Verify(
+            ds => ds.SubscribeToTradesAsync(symbol, It.IsAny<CancellationToken>()),
+            Times.Never
+        );
 
         await _service.SubscribeToTradesAsync(symbol);
 
@@ -54,6 +71,11 @@ public class BlockchainDataServiceTests
     {
         const Symbol symbol = Symbol.BtcUsd;
 
+        _mockDataSource.Verify(
+            ds => ds.UnsubscribeFromTradesAsync(symbol, It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
         await _service.UnsubscribeFromTradesAsync(symbol);
 
         _mockDataSource.Verify(
@@ -66,7 +88,18 @@ public class BlockchainDataServiceTests
     public async Task WhenTradeReceived_CallsAddTradeAsyncOnRepository()
     {
         var trade = CreateTestTrade(Symbol.BtcUsd);
+
+        _mockRepository.Verify(
+            repo => repo.AddTradeAsync(It.IsAny<TradeUpdate>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
         await _service.StartAsync();
+
+        _mockRepository.Verify(
+            repo => repo.AddTradeAsync(It.IsAny<TradeUpdate>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
 
         _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
@@ -86,7 +119,7 @@ public class BlockchainDataServiceTests
         await _service.StartAsync();
 
         Assert.Null(receivedTrade);
-        
+
         _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
 
         await Task.Delay(50);
@@ -104,6 +137,11 @@ public class BlockchainDataServiceTests
             .Setup(repo => repo.GetRecentTradesAsync(symbol, count, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedTrades);
 
+        _mockRepository.Verify(
+            repo => repo.GetRecentTradesAsync(symbol, count, It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
         var result = await _service.GetRecentTradesAsync(symbol, count);
 
         _mockRepository.Verify(
@@ -116,15 +154,31 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task AfterStopAsync_TradeReceivedEventDoesNotCallRepository()
     {
-        var trade = CreateTestTrade(Symbol.BtcUsd);
-        await _service.StartAsync();
-        await _service.StopAsync();
+        var tradeBeforeStop = CreateTestTrade(Symbol.BtcUsd, "trade-before-stop");
+        var tradeAfterStop = CreateTestTrade(Symbol.BtcUsd, "trade-after-stop");
 
-        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, trade);
-
-        await Task.Delay(50);
         _mockRepository.Verify(
             repo => repo.AddTradeAsync(It.IsAny<TradeUpdate>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
+        await _service.StartAsync();
+
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, tradeBeforeStop);
+        await Task.Delay(50);
+
+        _mockRepository.Verify(
+            repo => repo.AddTradeAsync(tradeBeforeStop, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+
+        await _service.StopAsync();
+
+        _mockDataSource.Raise(ds => ds.TradeReceived += null, this, tradeAfterStop);
+        await Task.Delay(50);
+
+        _mockRepository.Verify(
+            repo => repo.AddTradeAsync(tradeAfterStop, It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
