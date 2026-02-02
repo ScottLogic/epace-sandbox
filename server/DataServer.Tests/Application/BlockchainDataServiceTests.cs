@@ -52,7 +52,7 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task UnsubscribeFromTradesAsync_CallsUnsubscribeOnDataSourceWithCorrectSymbol()
     {
-        var symbol = Symbol.BtcUsd;
+        const Symbol symbol = Symbol.BtcUsd;
 
         await _service.UnsubscribeFromTradesAsync(symbol);
 
@@ -95,8 +95,8 @@ public class BlockchainDataServiceTests
     [Fact]
     public async Task GetRecentTradesAsync_CallsGetRecentTradesAsyncOnRepositoryWithCorrectParameters()
     {
-        var symbol = Symbol.BtcUsd;
-        var count = 50;
+        const Symbol symbol = Symbol.BtcUsd;
+        const int count = 50;
         var expectedTrades = new List<TradeUpdate> { CreateTestTrade(symbol) };
         _mockRepository
             .Setup(repo => repo.GetRecentTradesAsync(symbol, count, It.IsAny<CancellationToken>()))
