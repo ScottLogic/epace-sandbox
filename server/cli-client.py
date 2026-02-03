@@ -1,10 +1,14 @@
 import asyncio
 import json
+import os
+
+from dotenv import load_dotenv
 from signalrcore.hub_connection_builder import HubConnectionBuilder
 
+load_dotenv()
 
 SYMBOLS = ["ETH-USD", "BTC-USD"]
-SIGNALR_URL = "http://localhost:5000/blockchain"
+SIGNALR_URL = os.getenv("SIGNALR_URL", "http://localhost:5000/blockchain")
 
 
 def print_separator():
