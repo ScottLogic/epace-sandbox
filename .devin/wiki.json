@@ -1,0 +1,42 @@
+{
+  "project_overview": {
+    "name": "DataServer",
+    "description": "A robust and dynamic server designed to collate and serve live data to a dashboard. The server is built with flexibility in mind, enabling easy changes and additions of new data sources through a loosely-coupled, extensible codebase.",
+    "architecture": "The backend follows Clean Architecture principles with clear separation of concerns across layers. Data flows from external WebSocket APIs through the application and out to consumers via REST API and SignalR for real-time updates.",
+    "technology_stack": {
+      "framework": "ASP.NET Core",
+      "language": "C#",
+      "real_time": "SignalR",
+      "api": "REST"
+    }
+  },
+  "project_structure": {
+    "server": {
+      "description": "The main server application following Clean Architecture",
+      "layers": {
+        "DataServer.Api": "HTTP API and SignalR endpoints - wires all layers together",
+        "DataServer.Application": "Business logic, interfaces, and services that orchestrate data flow",
+        "DataServer.Connectors": "External data source implementations - designed for extensibility to add new data sources",
+        "DataServer.Domain": "Core entities and enums with no external dependencies",
+        "DataServer.Infrastructure": "Caching, logging, and cross-cutting concerns including repository implementations",
+        "DataServer.Tests": "Unit and integration tests"
+      }
+    },
+    "simulators": {
+      "description": "Contains mock data sources for entirely local deployments. These simulators allow the server to run without connecting to real external APIs, enabling development and testing in isolation.",
+      "purpose": "Running deployments with either mock sources or real sources by simply changing configuration files demonstrates the flexibility and loose coupling of the server architecture.",
+      "contents": {
+        "blockchain_api": "Mock implementation of the Blockchain.com Exchange WebSocket API for local development and testing"
+      }
+    }
+  },
+  "key_design_principles": {
+    "loose_coupling": "Data source implementations are abstracted behind interfaces, allowing new sources to be added without modifying core business logic",
+    "extensibility": "The Connectors layer is designed to easily accommodate additional data sources beyond the initial Blockchain.com Exchange integration",
+    "configuration_driven": "Switching between mock and real data sources is achieved through configuration changes, not code changes",
+    "clean_architecture": "Clear separation between Domain, Application, Infrastructure, Connectors, and API layers ensures maintainability and testability"
+  },
+  "data_flow": {
+    "description": "External data sources connect via WebSocket, flow through the data source interface implementations in Connectors, are processed by services in Application, stored via repositories in Infrastructure, and exposed to consumers through REST endpoints and SignalR hubs in the API layer"
+  }
+}
