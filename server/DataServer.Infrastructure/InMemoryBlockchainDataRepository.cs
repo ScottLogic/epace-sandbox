@@ -20,8 +20,11 @@ public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
 
         lock (_lock)
         {
-            var trades = _memoryCache.GetOrCreate(cacheKey, entry => new List<TradeUpdate>());
-            trades!.Add(trade);
+            var trades = _memoryCache.GetOrCreate(cacheKey, entry => new List<TradeUpdate>())!;
+            if (!trades.Any(t => t.TradeId == trade.TradeId))
+            {
+                trades.Add(trade);
+            }
         }
 
         return Task.CompletedTask;

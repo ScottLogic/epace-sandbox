@@ -1,6 +1,7 @@
 using DataServer.Domain.Blockchain;
 using DataServer.Infrastructure;
 using Microsoft.Extensions.Caching.Memory;
+using static DataServer.Tests.Shared.TestTradeFactory;
 
 namespace DataServer.Tests.Infrastructure;
 
@@ -169,22 +170,16 @@ public class InMemoryBlockchainDataRepositoryTests : IDisposable
         Assert.Empty(trades);
     }
 
-    private static TradeUpdate CreateTestTrade(
-        Symbol symbol,
-        string tradeId,
-        DateTimeOffset? timestamp = null
-    )
+    [Fact]
+    public async Task AddTradeAsync_DoesNotAddDuplicateTradeId()
     {
-        return new TradeUpdate(
-            Seqnum: 1,
-            Event: Event.Updated,
-            Channel: Channel.Trades,
-            Symbol: symbol,
-            Timestamp: timestamp ?? DateTimeOffset.UtcNow,
-            Side: Side.Buy,
-            Qty: 1.5m,
-            Price: 50000m,
-            TradeId: tradeId
-        );
+        var trade1 = CreateTestTrade(Symbol.BtcUsd, "same-trade-id");
+        var trade2 = CreateTestTrade(Symbol.BtcUsd, "same-trade-id");
+
+        await _repository.AddTradeAsync(trade1);
+        await _repository.AddTradeAsync(trade2);
+
+        var trades = await _repository.GetRecentTradesAsync(Symbol.BtcUsd, 10);
+        Assert.Single(trades);
     }
 }
