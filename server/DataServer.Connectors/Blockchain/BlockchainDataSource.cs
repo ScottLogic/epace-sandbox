@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
+using DataServer.Common.Extensions;
 using DataServer.Domain.Blockchain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -63,7 +64,9 @@ public class BlockchainDataSource(
             {
                 await _receiveTask;
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+            }
         }
 
         logger.LogInformation("Disconnected from blockchain API");
@@ -92,7 +95,7 @@ public class BlockchainDataSource(
     private object CreateSubscriptionRequest(SubscriptionAction action, Symbol symbol)
     {
         var actionString = action == SubscriptionAction.Subscribe ? "subscribe" : "unsubscribe";
-        var symbolString = GetSymbolString(symbol);
+        var symbolString = symbol.ToEnumMemberValue();
 
         if (!string.IsNullOrEmpty(_settings.ApiToken))
         {
@@ -155,7 +158,9 @@ public class BlockchainDataSource(
                 }
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+        }
         catch (WebSocketException ex)
         {
             logger.LogError(ex, "WebSocket error while receiving messages");
@@ -198,11 +203,18 @@ public class BlockchainDataSource(
         var seqnum = root.TryGetProperty("seqnum", out var seqnumElement)
             ? seqnumElement.GetInt32()
             : 0;
+
         var symbolString = root.TryGetProperty("symbol", out var symbolElement)
             ? symbolElement.GetString()
             : null;
 
-        var symbol = ParseSymbol(symbolString);
+        if (symbolString == null)
+        {
+            return;
+        }
+
+        symbolString.TryParseEnumMember<Symbol>(out var symbol);
+
         var eventType = eventString == "subscribed" ? Event.Subscribed : Event.Unsubscribed;
 
         var response = new TradeResponse(seqnum, eventType, Channel.Trades, symbol);
@@ -217,6 +229,12 @@ public class BlockchainDataSource(
         var symbolString = root.TryGetProperty("symbol", out var symbolElement)
             ? symbolElement.GetString()
             : null;
+
+        if (symbolString == null)
+        {
+            return;
+        }
+
         var timestamp = root.TryGetProperty("timestamp", out var timestampElement)
             ? DateTimeOffset.Parse(timestampElement.GetString()!)
             : DateTimeOffset.UtcNow;
@@ -231,7 +249,8 @@ public class BlockchainDataSource(
             ? tradeIdElement.GetString()
             : Guid.NewGuid().ToString();
 
-        var symbol = ParseSymbol(symbolString);
+        symbolString.TryParseEnumMember<Symbol>(out var symbol);
+
         var side = sideString?.ToLowerInvariant() == "sell" ? Side.Sell : Side.Buy;
 
         var trade = new TradeUpdate(
@@ -247,26 +266,6 @@ public class BlockchainDataSource(
         );
 
         TradeReceived?.Invoke(this, trade);
-    }
-
-    private static Symbol ParseSymbol(string? symbolString)
-    {
-        return symbolString?.ToUpperInvariant() switch
-        {
-            "ETH-USD" => Symbol.EthUsd,
-            "BTC-USD" => Symbol.BtcUsd,
-            _ => Symbol.BtcUsd,
-        };
-    }
-
-    private static string GetSymbolString(Symbol symbol)
-    {
-        return symbol switch
-        {
-            Symbol.EthUsd => "ETH-USD",
-            Symbol.BtcUsd => "BTC-USD",
-            _ => symbol.ToString(),
-        };
     }
 
     public void Dispose()
