@@ -1,42 +1,46 @@
 {
-  "project_overview": {
-    "name": "DataServer",
-    "description": "A robust and dynamic server designed to collate and serve live data to a dashboard. The server is built with flexibility in mind, enabling easy changes and additions of new data sources through a loosely-coupled, extensible codebase.",
-    "architecture": "The backend follows Clean Architecture principles with clear separation of concerns across layers. Data flows from external WebSocket APIs through the application and out to consumers via REST API and SignalR for real-time updates.",
-    "technology_stack": {
-      "framework": "ASP.NET Core",
-      "language": "C#",
-      "real_time": "SignalR",
-      "api": "REST"
-    }
-  },
-  "project_structure": {
-    "server": {
-      "description": "The main server application following Clean Architecture",
-      "layers": {
-        "DataServer.Api": "HTTP API and SignalR endpoints - wires all layers together",
-        "DataServer.Application": "Business logic, interfaces, and services that orchestrate data flow",
-        "DataServer.Connectors": "External data source implementations - designed for extensibility to add new data sources",
-        "DataServer.Domain": "Core entities and enums with no external dependencies",
-        "DataServer.Infrastructure": "Caching, logging, and cross-cutting concerns including repository implementations",
-        "DataServer.Tests": "Unit and integration tests"
-      }
+  "repo_notes": [
+    {
+      "content": "DataServer is a robust and dynamic server designed to collate and serve live data to a dashboard. The server is built with flexibility in mind, enabling easy changes and additions of new data sources through a loosely-coupled, extensible codebase. The backend follows Clean Architecture principles with clear separation of concerns across layers. Data flows from external WebSocket APIs through the application and out to consumers via REST API and SignalR for real-time updates.",
+      "author": "Project Owner"
     },
-    "simulators": {
-      "description": "Contains mock data sources for entirely local deployments. These simulators allow the server to run without connecting to real external APIs, enabling development and testing in isolation.",
-      "purpose": "Running deployments with either mock sources or real sources by simply changing configuration files demonstrates the flexibility and loose coupling of the server architecture.",
-      "contents": {
-        "blockchain_api": "Mock implementation of the Blockchain.com Exchange WebSocket API for local development and testing"
-      }
+    {
+      "content": "The server/ folder contains the main application following Clean Architecture with these layers: DataServer.Api (HTTP API and SignalR endpoints), DataServer.Application (business logic and interfaces), DataServer.Connectors (external data source implementations designed for extensibility), DataServer.Domain (core entities with no dependencies), DataServer.Infrastructure (caching, logging, repositories), and DataServer.Tests (unit and integration tests).",
+      "author": "Project Owner"
+    },
+    {
+      "content": "The simulators/ folder contains mock data sources for entirely local deployments. These simulators allow the server to run without connecting to real external APIs, enabling development and testing in isolation. Running deployments with either mock sources or real sources by simply changing configuration files demonstrates the flexibility and loose coupling of the server architecture.",
+      "author": "Project Owner"
+    },
+    {
+      "content": "Key design principles: Data source implementations are abstracted behind interfaces, allowing new sources to be added without modifying core business logic. The Connectors layer is designed to easily accommodate additional data sources. Switching between mock and real data sources is achieved through configuration changes, not code changes.",
+      "author": "Project Owner"
     }
-  },
-  "key_design_principles": {
-    "loose_coupling": "Data source implementations are abstracted behind interfaces, allowing new sources to be added without modifying core business logic",
-    "extensibility": "The Connectors layer is designed to easily accommodate additional data sources beyond the initial Blockchain.com Exchange integration",
-    "configuration_driven": "Switching between mock and real data sources is achieved through configuration changes, not code changes",
-    "clean_architecture": "Clear separation between Domain, Application, Infrastructure, Connectors, and API layers ensures maintainability and testability"
-  },
-  "data_flow": {
-    "description": "External data sources connect via WebSocket, flow through the data source interface implementations in Connectors, are processed by services in Application, stored via repositories in Infrastructure, and exposed to consumers through REST endpoints and SignalR hubs in the API layer"
-  }
+  ],
+  "pages": [
+    {
+      "title": "Architecture Overview",
+      "purpose": "High-level overview of the DataServer architecture, Clean Architecture principles, and how the layers interact to provide a loosely-coupled extensible system for serving live data"
+    },
+    {
+      "title": "Server Layers",
+      "purpose": "Detailed documentation of each server layer: Api, Application, Connectors, Domain, Infrastructure, and Tests - explaining their responsibilities and dependencies",
+      "parent": "Architecture Overview"
+    },
+    {
+      "title": "Data Flow",
+      "purpose": "Document how data flows from external WebSocket sources through Connectors, Application services, Infrastructure repositories, and out to consumers via REST and SignalR",
+      "parent": "Architecture Overview"
+    },
+    {
+      "title": "Connectors and Extensibility",
+      "purpose": "Document the Connectors layer design that enables adding new data sources without modifying core business logic, including interface abstractions and implementation patterns",
+      "parent": "Server Layers"
+    },
+    {
+      "title": "Simulators",
+      "purpose": "Document the simulators folder containing mock data sources for local deployments, explaining how configuration-driven source switching demonstrates the server's flexibility",
+      "parent": "Architecture Overview"
+    }
+  ]
 }
