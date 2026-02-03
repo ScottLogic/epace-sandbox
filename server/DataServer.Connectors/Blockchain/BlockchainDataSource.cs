@@ -9,11 +9,13 @@ using Microsoft.Extensions.Options;
 
 namespace DataServer.Connectors.Blockchain;
 
-public class BlockchainDataSource : IBlockchainDataSource, IDisposable
+public class BlockchainDataSource(
+    IOptions<BlockchainSettings> settings,
+    IWebSocketClient webSocketClient,
+    ILogger<BlockchainDataSource> logger)
+    : IBlockchainDataSource, IDisposable
 {
-    private readonly BlockchainSettings _settings;
-    private readonly IWebSocketClient _webSocketClient;
-    private readonly ILogger<BlockchainDataSource> _logger;
+    private readonly BlockchainSettings _settings = settings.Value;
     private CancellationTokenSource? _receiveCts;
     private Task? _receiveTask;
 
@@ -25,41 +27,30 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
     public event EventHandler<TradeUpdate>? TradeReceived;
     public event EventHandler<TradeResponse>? SubscriptionConfirmed;
 
-    public bool IsConnected => _webSocketClient.State == WebSocketState.Open;
-
-    public BlockchainDataSource(
-        IOptions<BlockchainSettings> settings,
-        IWebSocketClient webSocketClient,
-        ILogger<BlockchainDataSource> logger
-    )
-    {
-        _settings = settings.Value;
-        _webSocketClient = webSocketClient;
-        _logger = logger;
-    }
+    public bool IsConnected => webSocketClient.State == WebSocketState.Open;
 
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
         var uri = new Uri(_settings.ApiUrl);
-        _logger.LogInformation("Connecting to blockchain API at {Uri}", uri);
+        logger.LogInformation("Connecting to blockchain API at {Uri}", uri);
 
-        await _webSocketClient.ConnectAsync(uri, cancellationToken);
+        await webSocketClient.ConnectAsync(uri, cancellationToken);
 
         _receiveCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _receiveTask = ReceiveMessagesAsync(_receiveCts.Token);
 
-        _logger.LogInformation("Connected to blockchain API");
+        logger.LogInformation("Connected to blockchain API");
     }
 
     public async Task DisconnectAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Disconnecting from blockchain API");
+        logger.LogInformation("Disconnecting from blockchain API");
 
         _receiveCts?.Cancel();
 
-        if (_webSocketClient.State == WebSocketState.Open)
+        if (webSocketClient.State == WebSocketState.Open)
         {
-            await _webSocketClient.CloseAsync(
+            await webSocketClient.CloseAsync(
                 WebSocketCloseStatus.NormalClosure,
                 "Client disconnecting",
                 cancellationToken
@@ -75,7 +66,7 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
             catch (OperationCanceledException) { }
         }
 
-        _logger.LogInformation("Disconnected from blockchain API");
+        logger.LogInformation("Disconnected from blockchain API");
     }
 
     public async Task SubscribeToTradesAsync(
@@ -85,7 +76,7 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
     {
         var request = CreateSubscriptionRequest(SubscriptionAction.Subscribe, symbol);
         await SendMessageAsync(request, cancellationToken);
-        _logger.LogInformation("Subscribed to trades for {Symbol}", symbol);
+        logger.LogInformation("Subscribed to trades for {Symbol}", symbol);
     }
 
     public async Task UnsubscribeFromTradesAsync(
@@ -95,7 +86,7 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
     {
         var request = CreateSubscriptionRequest(SubscriptionAction.Unsubscribe, symbol);
         await SendMessageAsync(request, cancellationToken);
-        _logger.LogInformation("Unsubscribed from trades for {Symbol}", symbol);
+        logger.LogInformation("Unsubscribed from trades for {Symbol}", symbol);
     }
 
     private object CreateSubscriptionRequest(SubscriptionAction action, Symbol symbol)
@@ -128,14 +119,14 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
         var bytes = Encoding.UTF8.GetBytes(json);
         var buffer = new ArraySegment<byte>(bytes);
 
-        await _webSocketClient.SendAsync(
+        await webSocketClient.SendAsync(
             buffer,
             WebSocketMessageType.Text,
             true,
             cancellationToken
         );
 
-        _logger.LogDebug("Sent message: {Message}", json);
+        logger.LogDebug("Sent message: {Message}", json);
     }
 
     private async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
@@ -146,14 +137,14 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
         {
             while (!cancellationToken.IsCancellationRequested && IsConnected)
             {
-                var result = await _webSocketClient.ReceiveAsync(
+                var result = await webSocketClient.ReceiveAsync(
                     new ArraySegment<byte>(buffer),
                     cancellationToken
                 );
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    _logger.LogInformation("WebSocket closed by server");
+                    logger.LogInformation("WebSocket closed by server");
                     break;
                 }
 
@@ -167,7 +158,7 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
         catch (OperationCanceledException) { }
         catch (WebSocketException ex)
         {
-            _logger.LogError(ex, "WebSocket error while receiving messages");
+            logger.LogError(ex, "WebSocket error while receiving messages");
         }
     }
 
@@ -175,7 +166,7 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
     {
         try
         {
-            _logger.LogDebug("Received message: {Message}", message);
+            logger.LogDebug("Received message: {Message}", message);
 
             using var doc = JsonDocument.Parse(message);
             var root = doc.RootElement;
@@ -198,7 +189,7 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse message: {Message}", message);
+            logger.LogWarning(ex, "Failed to parse message: {Message}", message);
         }
     }
 
@@ -282,6 +273,6 @@ public class BlockchainDataSource : IBlockchainDataSource, IDisposable
     {
         _receiveCts?.Cancel();
         _receiveCts?.Dispose();
-        _webSocketClient.Dispose();
+        webSocketClient.Dispose();
     }
 }

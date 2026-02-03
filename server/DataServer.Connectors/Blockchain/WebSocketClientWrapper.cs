@@ -5,12 +5,7 @@ namespace DataServer.Connectors.Blockchain;
 
 public class WebSocketClientWrapper : IWebSocketClient
 {
-    private readonly ClientWebSocket _clientWebSocket;
-
-    public WebSocketClientWrapper()
-    {
-        _clientWebSocket = new ClientWebSocket();
-    }
+    private readonly ClientWebSocket _clientWebSocket = new();
 
     public WebSocketState State => _clientWebSocket.State;
 
