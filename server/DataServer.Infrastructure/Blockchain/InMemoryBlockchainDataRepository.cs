@@ -4,15 +4,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace DataServer.Infrastructure.Blockchain;
 
-public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
+public class InMemoryBlockchainDataRepository(IMemoryCache memoryCache) : IBlockchainDataRepository
 {
-    private readonly IMemoryCache _memoryCache;
-    private readonly object _lock = new();
-
-    public InMemoryBlockchainDataRepository(IMemoryCache memoryCache)
-    {
-        _memoryCache = memoryCache;
-    }
+    private readonly Lock _lock = new();
 
     public Task AddTradeAsync(TradeUpdate trade, CancellationToken cancellationToken = default)
     {
@@ -20,7 +14,7 @@ public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
 
         lock (_lock)
         {
-            var cachedTrades = _memoryCache.GetOrCreate(cacheKey, entry => new CachedTrades())!;
+            var cachedTrades = memoryCache.GetOrCreate(cacheKey, entry => new CachedTrades())!;
             cachedTrades.TryAdd(trade);
         }
 
@@ -38,7 +32,7 @@ public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
         lock (_lock)
         {
             if (
-                _memoryCache.TryGetValue<CachedTrades>(cacheKey, out var cachedTrades)
+                memoryCache.TryGetValue<CachedTrades>(cacheKey, out var cachedTrades)
                 && cachedTrades != null
             )
             {
@@ -55,7 +49,7 @@ public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
 
         lock (_lock)
         {
-            _memoryCache.Remove(cacheKey);
+            memoryCache.Remove(cacheKey);
         }
 
         return Task.CompletedTask;
