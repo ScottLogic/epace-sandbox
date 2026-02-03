@@ -1,4 +1,5 @@
 using DataServer.Api.Hubs;
+using DataServer.Api.Middleware;
 using DataServer.Api.Services;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
@@ -29,6 +30,8 @@ builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
 builder.Services.AddHostedService<BlockchainHubService>();
 
 var app = builder.Build();
+
+app.UseGlobalExceptionHandler();
 
 app.MapHub<BlockchainHub>("/blockchain");
 
