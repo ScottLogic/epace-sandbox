@@ -1,40 +1,32 @@
 using System.Text.Json;
 using DataServer.Api.Models.JsonRpc;
+using DataServer.Api.Utilities;
 using DataServer.Application.Services;
 using DataServer.Domain.Blockchain;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DataServer.Api.Hubs;
 
-public class BlockchainHub : Hub
+public class BlockchainHub(
+    IBlockchainDataService blockchainDataService,
+    ILogger<BlockchainHub> logger)
+    : Hub
 {
-    private readonly IBlockchainDataService _blockchainDataService;
-    private readonly ILogger<BlockchainHub> _logger;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
     };
 
-    public BlockchainHub(
-        IBlockchainDataService blockchainDataService,
-        ILogger<BlockchainHub> logger
-    )
-    {
-        _blockchainDataService = blockchainDataService;
-        _logger = logger;
-    }
-
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
+        logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation(
+        logger.LogInformation(
             "Client disconnected: {ConnectionId}, Exception: {Exception}",
             Context.ConnectionId,
             exception?.Message
@@ -51,7 +43,7 @@ public class BlockchainHub : Hub
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning("Failed to parse JSON-RPC request: {Error}", ex.Message);
+            logger.LogWarning("Failed to parse JSON-RPC request: {Error}", ex.Message);
             await SendErrorResponse(JsonRpcError.ParseError(), null);
             return;
         }
@@ -98,7 +90,7 @@ public class BlockchainHub : Hub
             return;
         }
 
-        if (!TryParseSymbol(request.Params.Symbol, out var symbol))
+        if (!SymbolMapper.TryParse(request.Params.Symbol, out var symbol))
         {
             await SendErrorResponse(
                 JsonRpcError.InvalidParams($"Invalid symbol: {request.Params.Symbol}"),
@@ -110,7 +102,7 @@ public class BlockchainHub : Hub
         try
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, GetTradesGroupName(symbol));
-            await _blockchainDataService.SubscribeToTradesAsync(symbol);
+            await blockchainDataService.SubscribeToTradesAsync(symbol);
 
             var result = new
             {
@@ -120,7 +112,7 @@ public class BlockchainHub : Hub
             };
 
             await SendSuccessResponse(result, request.Id);
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Client {ConnectionId} subscribed to trades for {Symbol}",
                 Context.ConnectionId,
                 symbol
@@ -128,7 +120,7 @@ public class BlockchainHub : Hub
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to subscribe to trades for {Symbol}", symbol);
+            logger.LogError(ex, "Failed to subscribe to trades for {Symbol}", symbol);
             await SendErrorResponse(JsonRpcError.InternalError(ex.Message), request.Id);
         }
     }
@@ -150,7 +142,7 @@ public class BlockchainHub : Hub
             return;
         }
 
-        if (!TryParseSymbol(request.Params.Symbol, out var symbol))
+        if (!SymbolMapper.TryParse(request.Params.Symbol, out var symbol))
         {
             await SendErrorResponse(
                 JsonRpcError.InvalidParams($"Invalid symbol: {request.Params.Symbol}"),
@@ -162,7 +154,7 @@ public class BlockchainHub : Hub
         try
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetTradesGroupName(symbol));
-            await _blockchainDataService.UnsubscribeFromTradesAsync(symbol);
+            await blockchainDataService.UnsubscribeFromTradesAsync(symbol);
 
             var result = new
             {
@@ -172,7 +164,7 @@ public class BlockchainHub : Hub
             };
 
             await SendSuccessResponse(result, request.Id);
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Client {ConnectionId} unsubscribed from trades for {Symbol}",
                 Context.ConnectionId,
                 symbol
@@ -180,7 +172,7 @@ public class BlockchainHub : Hub
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to unsubscribe from trades for {Symbol}", symbol);
+            logger.LogError(ex, "Failed to unsubscribe from trades for {Symbol}", symbol);
             await SendErrorResponse(JsonRpcError.InternalError(ex.Message), request.Id);
         }
     }
@@ -201,17 +193,6 @@ public class BlockchainHub : Hub
             "ReceiveMessage",
             JsonSerializer.Serialize(response, JsonOptions)
         );
-    }
-
-    private static bool TryParseSymbol(string symbolString, out Symbol symbol)
-    {
-        symbol = default;
-        return symbolString.ToUpperInvariant() switch
-        {
-            "ETH-USD" => (symbol = Symbol.EthUsd) == Symbol.EthUsd,
-            "BTC-USD" => (symbol = Symbol.BtcUsd) == Symbol.BtcUsd,
-            _ => false,
-        };
     }
 
     public static string GetTradesGroupName(Symbol symbol) => $"trades:{symbol}";
