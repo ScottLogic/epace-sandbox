@@ -20,11 +20,8 @@ public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
 
         lock (_lock)
         {
-            var trades = _memoryCache.GetOrCreate(cacheKey, entry => new List<TradeUpdate>())!;
-            if (!trades.Any(t => t.TradeId == trade.TradeId))
-            {
-                trades.Add(trade);
-            }
+            var cachedTrades = _memoryCache.GetOrCreate(cacheKey, entry => new CachedTrades())!;
+            cachedTrades.TryAdd(trade);
         }
 
         return Task.CompletedTask;
@@ -41,12 +38,11 @@ public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
         lock (_lock)
         {
             if (
-                _memoryCache.TryGetValue<List<TradeUpdate>>(cacheKey, out var trades)
-                && trades != null
+                _memoryCache.TryGetValue<CachedTrades>(cacheKey, out var cachedTrades)
+                && cachedTrades != null
             )
             {
-                var result = trades.OrderByDescending(t => t.Timestamp).Take(count).ToList();
-                return Task.FromResult<IReadOnlyList<TradeUpdate>>(result);
+                return Task.FromResult(cachedTrades.GetRecentTrades(count));
             }
         }
 
