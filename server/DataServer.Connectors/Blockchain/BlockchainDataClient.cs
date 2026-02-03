@@ -10,13 +10,13 @@ using Microsoft.Extensions.Options;
 
 namespace DataServer.Connectors.Blockchain;
 
-public class BlockchainDataSource(
-    IOptions<BlockchainSettings> settings,
+public class BlockchainDataClient(
+    IOptions<BlockchainSettings> options,
     IWebSocketClient webSocketClient,
-    ILogger<BlockchainDataSource> logger)
-    : IBlockchainDataSource, IDisposable
+    ILogger<BlockchainDataClient> logger)
+    : IBlockchainDataClient, IDisposable
 {
-    private readonly BlockchainSettings _settings = settings.Value;
+    private readonly BlockchainSettings _options = options.Value;
     private CancellationTokenSource? _receiveCts;
     private Task? _receiveTask;
 
@@ -32,7 +32,7 @@ public class BlockchainDataSource(
 
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
-        var uri = new Uri(_settings.ApiUrl);
+        var uri = new Uri(_options.ApiUrl);
         logger.LogInformation("Connecting to blockchain API at {Uri}", uri);
 
         await webSocketClient.ConnectAsync(uri, cancellationToken);
@@ -97,14 +97,14 @@ public class BlockchainDataSource(
         var actionString = action == SubscriptionAction.Subscribe ? "subscribe" : "unsubscribe";
         var symbolString = symbol.ToEnumMemberValue();
 
-        if (!string.IsNullOrEmpty(_settings.ApiToken))
+        if (!string.IsNullOrEmpty(_options.ApiToken))
         {
             return new
             {
                 action = actionString,
                 channel = "trades",
                 symbol = symbolString,
-                token = _settings.ApiToken,
+                token = _options.ApiToken,
             };
         }
 

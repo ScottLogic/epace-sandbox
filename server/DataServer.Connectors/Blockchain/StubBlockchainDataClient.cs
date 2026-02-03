@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DataServer.Connectors.Blockchain;
 
-public class StubBlockchainDataSource : IBlockchainDataSource
+public class StubBlockchainDataClient : IBlockchainDataClient
 {
-    private readonly ILogger<StubBlockchainDataSource> _logger;
+    private readonly ILogger<StubBlockchainDataClient> _logger;
     private bool _isConnected;
 
     public event EventHandler<TradeUpdate>? TradeReceived;
@@ -14,7 +14,7 @@ public class StubBlockchainDataSource : IBlockchainDataSource
 
     public bool IsConnected => _isConnected;
 
-    public StubBlockchainDataSource(ILogger<StubBlockchainDataSource> logger)
+    public StubBlockchainDataClient(ILogger<StubBlockchainDataClient> logger)
     {
         _logger = logger;
     }

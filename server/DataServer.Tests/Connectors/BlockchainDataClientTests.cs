@@ -11,17 +11,17 @@ using Moq;
 
 namespace DataServer.Tests.Connectors;
 
-public class BlockchainDataSourceTests
+public class BlockchainDataClientTests
 {
     private readonly Mock<IWebSocketClient> _mockWebSocketClient;
-    private readonly Mock<ILogger<BlockchainDataSource>> _mockLogger;
+    private readonly Mock<ILogger<BlockchainDataClient>> _mockLogger;
     private readonly BlockchainSettings _settings;
-    private readonly BlockchainDataSource _dataSource;
+    private readonly BlockchainDataClient _dataClient;
 
-    public BlockchainDataSourceTests()
+    public BlockchainDataClientTests()
     {
         _mockWebSocketClient = new Mock<IWebSocketClient>();
-        _mockLogger = new Mock<ILogger<BlockchainDataSource>>();
+        _mockLogger = new Mock<ILogger<BlockchainDataClient>>();
         _settings = new BlockchainSettings { ApiUrl = "ws://localhost:8765", ApiToken = null };
 
         _mockWebSocketClient.Setup(ws => ws.State).Returns(WebSocketState.None);
@@ -29,7 +29,7 @@ public class BlockchainDataSourceTests
         var mockOptions = new Mock<IOptions<BlockchainSettings>>();
         mockOptions.Setup(o => o.Value).Returns(_settings);
 
-        _dataSource = new BlockchainDataSource(
+        _dataClient = new BlockchainDataClient(
             mockOptions.Object,
             _mockWebSocketClient.Object,
             _mockLogger.Object
@@ -87,7 +87,7 @@ public class BlockchainDataSourceTests
     {
         SetupWebSocketForConnect();
 
-        await _dataSource.ConnectAsync();
+        await _dataClient.ConnectAsync();
 
         _mockWebSocketClient.Verify(
             ws => ws.ConnectAsync(new Uri("ws://localhost:8765"), It.IsAny<CancellationToken>()),
@@ -100,11 +100,11 @@ public class BlockchainDataSourceTests
     {
         SetupWebSocketForConnect();
 
-        Assert.False(_dataSource.IsConnected);
+        Assert.False(_dataClient.IsConnected);
 
-        await _dataSource.ConnectAsync();
+        await _dataClient.ConnectAsync();
 
-        Assert.True(_dataSource.IsConnected);
+        Assert.True(_dataClient.IsConnected);
     }
 
     [Fact]
@@ -113,8 +113,8 @@ public class BlockchainDataSourceTests
         SetupWebSocketForConnect();
         SetupWebSocketForDisconnect();
 
-        await _dataSource.ConnectAsync();
-        await _dataSource.DisconnectAsync();
+        await _dataClient.ConnectAsync();
+        await _dataClient.DisconnectAsync();
 
         _mockWebSocketClient.Verify(
             ws =>
@@ -133,11 +133,11 @@ public class BlockchainDataSourceTests
         SetupWebSocketForConnect();
         SetupWebSocketForDisconnect();
 
-        await _dataSource.ConnectAsync();
-        Assert.True(_dataSource.IsConnected);
+        await _dataClient.ConnectAsync();
+        Assert.True(_dataClient.IsConnected);
 
-        await _dataSource.DisconnectAsync();
-        Assert.False(_dataSource.IsConnected);
+        await _dataClient.DisconnectAsync();
+        Assert.False(_dataClient.IsConnected);
     }
 
     [Fact]
@@ -167,8 +167,8 @@ public class BlockchainDataSourceTests
             )
             .Returns(Task.CompletedTask);
 
-        await _dataSource.ConnectAsync();
-        await _dataSource.SubscribeToTradesAsync(Symbol.BtcUsd);
+        await _dataClient.ConnectAsync();
+        await _dataClient.SubscribeToTradesAsync(Symbol.BtcUsd);
 
         Assert.NotNull(sentMessage);
         var json = JsonDocument.Parse(sentMessage);
@@ -204,8 +204,8 @@ public class BlockchainDataSourceTests
             )
             .Returns(Task.CompletedTask);
 
-        await _dataSource.ConnectAsync();
-        await _dataSource.UnsubscribeFromTradesAsync(Symbol.EthUsd);
+        await _dataClient.ConnectAsync();
+        await _dataClient.UnsubscribeFromTradesAsync(Symbol.EthUsd);
 
         Assert.NotNull(sentMessage);
         var json = JsonDocument.Parse(sentMessage);
@@ -225,7 +225,7 @@ public class BlockchainDataSourceTests
         var mockOptions = new Mock<IOptions<BlockchainSettings>>();
         mockOptions.Setup(o => o.Value).Returns(settingsWithToken);
 
-        var dataSourceWithToken = new BlockchainDataSource(
+        var dataSourceWithToken = new BlockchainDataClient(
             mockOptions.Object,
             _mockWebSocketClient.Object,
             _mockLogger.Object
@@ -290,8 +290,8 @@ public class BlockchainDataSourceTests
             )
             .Returns(Task.CompletedTask);
 
-        await _dataSource.ConnectAsync();
-        await _dataSource.SubscribeToTradesAsync(Symbol.BtcUsd);
+        await _dataClient.ConnectAsync();
+        await _dataClient.SubscribeToTradesAsync(Symbol.BtcUsd);
 
         Assert.NotNull(sentMessage);
         var json = JsonDocument.Parse(sentMessage);
@@ -301,7 +301,7 @@ public class BlockchainDataSourceTests
     [Fact]
     public void IsConnected_ReturnsFalseWhenNotConnected()
     {
-        Assert.False(_dataSource.IsConnected);
+        Assert.False(_dataClient.IsConnected);
     }
 
     [Fact]
@@ -309,8 +309,8 @@ public class BlockchainDataSourceTests
     {
         SetupWebSocketForConnect();
 
-        await _dataSource.ConnectAsync();
+        await _dataClient.ConnectAsync();
 
-        Assert.True(_dataSource.IsConnected);
+        Assert.True(_dataClient.IsConnected);
     }
 }

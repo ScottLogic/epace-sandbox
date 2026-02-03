@@ -5,32 +5,32 @@ namespace DataServer.Application.Services;
 
 public class BlockchainDataService : IBlockchainDataService
 {
-    private readonly IBlockchainDataSource _dataSource;
+    private readonly IBlockchainDataClient _dataClient;
     private readonly IBlockchainDataRepository _repository;
     private EventHandler<TradeUpdate>? _tradeReceivedHandler;
 
     public event EventHandler<TradeUpdate>? TradeReceived;
 
     public BlockchainDataService(
-        IBlockchainDataSource dataSource,
+        IBlockchainDataClient dataClient,
         IBlockchainDataRepository repository
     )
     {
-        _dataSource = dataSource;
+        _dataClient = dataClient;
         _repository = repository;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         _tradeReceivedHandler = (sender, trade) => _ = OnTradeReceivedAsync(trade);
-        _dataSource.TradeReceived += _tradeReceivedHandler;
-        await _dataSource.ConnectAsync(cancellationToken);
+        _dataClient.TradeReceived += _tradeReceivedHandler;
+        await _dataClient.ConnectAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        _dataSource.TradeReceived -= _tradeReceivedHandler;
-        await _dataSource.DisconnectAsync(cancellationToken);
+        _dataClient.TradeReceived -= _tradeReceivedHandler;
+        await _dataClient.DisconnectAsync(cancellationToken);
     }
 
     public async Task SubscribeToTradesAsync(
@@ -38,7 +38,7 @@ public class BlockchainDataService : IBlockchainDataService
         CancellationToken cancellationToken = default
     )
     {
-        await _dataSource.SubscribeToTradesAsync(symbol, cancellationToken);
+        await _dataClient.SubscribeToTradesAsync(symbol, cancellationToken);
     }
 
     public async Task UnsubscribeFromTradesAsync(
@@ -46,7 +46,7 @@ public class BlockchainDataService : IBlockchainDataService
         CancellationToken cancellationToken = default
     )
     {
-        await _dataSource.UnsubscribeFromTradesAsync(symbol, cancellationToken);
+        await _dataClient.UnsubscribeFromTradesAsync(symbol, cancellationToken);
     }
 
     public async Task<IReadOnlyList<TradeUpdate>> GetRecentTradesAsync(

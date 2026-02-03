@@ -22,7 +22,7 @@ builder.Services.Configure<BlockchainSettings>(
 );
 
 builder.Services.AddSingleton<IWebSocketClient, WebSocketClientWrapper>();
-builder.Services.AddSingleton<IBlockchainDataSource, BlockchainDataSource>();
+builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
 builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
 builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
 
