@@ -8,13 +8,13 @@ namespace DataServer.Tests.Application;
 
 public class BlockchainDataServiceTests
 {
-    private readonly Mock<IBlockchainDataSource> _mockDataSource;
+    private readonly Mock<IBlockchainDataClient> _mockDataSource;
     private readonly Mock<IBlockchainDataRepository> _mockRepository;
     private readonly BlockchainDataService _service;
 
     public BlockchainDataServiceTests()
     {
-        _mockDataSource = new Mock<IBlockchainDataSource>();
+        _mockDataSource = new Mock<IBlockchainDataClient>();
         _mockRepository = new Mock<IBlockchainDataRepository>();
         _service = new BlockchainDataService(_mockDataSource.Object, _mockRepository.Object);
     }

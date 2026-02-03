@@ -2,7 +2,7 @@ using DataServer.Domain.Blockchain;
 
 namespace DataServer.Application.Interfaces;
 
-public interface IBlockchainDataSource
+public interface IBlockchainDataClient
 {
     Task ConnectAsync(CancellationToken cancellationToken = default);
     Task DisconnectAsync(CancellationToken cancellationToken = default);
