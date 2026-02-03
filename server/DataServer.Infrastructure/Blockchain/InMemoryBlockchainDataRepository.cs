@@ -2,7 +2,7 @@ using DataServer.Application.Interfaces;
 using DataServer.Domain.Blockchain;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace DataServer.Infrastructure;
+namespace DataServer.Infrastructure.Blockchain;
 
 public class InMemoryBlockchainDataRepository : IBlockchainDataRepository
 {

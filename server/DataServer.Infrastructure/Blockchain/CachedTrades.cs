@@ -1,8 +1,8 @@
 using DataServer.Domain.Blockchain;
 
-namespace DataServer.Infrastructure;
+namespace DataServer.Infrastructure.Blockchain;
 
-internal class CachedTrades
+public class CachedTrades
 {
     private readonly List<TradeUpdate> _trades = new();
     private readonly HashSet<string> _tradeIds = new();

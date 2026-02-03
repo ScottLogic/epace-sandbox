@@ -1,5 +1,5 @@
 using DataServer.Domain.Blockchain;
-using DataServer.Infrastructure;
+using DataServer.Infrastructure.Blockchain;
 using Microsoft.Extensions.Caching.Memory;
 using static DataServer.Tests.Shared.TestTradeFactory;
 
