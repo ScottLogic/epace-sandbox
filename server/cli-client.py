@@ -8,7 +8,8 @@ from signalrcore.hub_connection_builder import HubConnectionBuilder
 load_dotenv()
 
 SYMBOLS = ["ETH-USD", "BTC-USD"]
-SIGNALR_URL = os.getenv("SIGNALR_URL", "http://localhost:5000/blockchain")
+SIGNALR_URL = os.getenv("SIGNALR_URL")
+BLOCKCHAIN_URL = f"{SIGNALR_URL}/blockchain"
 
 
 def print_separator():
@@ -83,7 +84,7 @@ def on_open():
 async def connect_and_subscribe(symbol: str):
     hub_connection = (
         HubConnectionBuilder()
-        .with_url(SIGNALR_URL)
+        .with_url(BLOCKCHAIN_URL)
         .with_automatic_reconnect(
             {
                 "type": "raw",
@@ -102,7 +103,7 @@ async def connect_and_subscribe(symbol: str):
 
     try:
         hub_connection.start()
-        print(f"\nConnecting to {SIGNALR_URL}...")
+        print(f"\nConnecting to {BLOCKCHAIN_URL}...")
 
         await asyncio.sleep(1)
 
@@ -126,7 +127,7 @@ async def connect_and_subscribe(symbol: str):
         print("Disconnected by user")
     except Exception as e:
         print(f"\nError: {e}")
-        print(f"Make sure the server is running at {SIGNALR_URL}")
+        print(f"Make sure the server is running at {BLOCKCHAIN_URL}")
         hub_connection.stop()
 
 
