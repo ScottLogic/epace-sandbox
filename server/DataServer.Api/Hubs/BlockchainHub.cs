@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DataServer.Api.Models.JsonRpc;
+using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Common.Extensions;
 using DataServer.Domain.Blockchain;
@@ -7,10 +8,8 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DataServer.Api.Hubs;
 
-public class BlockchainHub(
-    IBlockchainDataService blockchainDataService,
-    ILogger<BlockchainHub> logger
-) : Hub
+public class BlockchainHub(IBlockchainDataService blockchainDataService, IApplicationLogger logger)
+    : Hub
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -20,17 +19,13 @@ public class BlockchainHub(
 
     public override async Task OnConnectedAsync()
     {
-        logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
+        logger.LogHubClientConnected(Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        logger.LogInformation(
-            "Client disconnected: {ConnectionId}, Exception: {Exception}",
-            Context.ConnectionId,
-            exception?.Message
-        );
+        logger.LogHubClientDisconnected(Context.ConnectionId, exception);
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -43,7 +38,7 @@ public class BlockchainHub(
         }
         catch (JsonException ex)
         {
-            logger.LogWarning("Failed to parse JSON-RPC request: {Error}", ex.Message);
+            logger.LogJsonRpcParseError(ex.Message);
             await SendErrorResponse(JsonRpcError.ParseError(), null);
             return;
         }
@@ -112,15 +107,11 @@ public class BlockchainHub(
             };
 
             await SendSuccessResponse(result, request.Id);
-            logger.LogInformation(
-                "Client {ConnectionId} subscribed to trades for {Symbol}",
-                Context.ConnectionId,
-                symbol
-            );
+            logger.LogClientSubscribed(Context.ConnectionId, symbol);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to subscribe to trades for {Symbol}", symbol);
+            logger.LogSubscriptionError(symbol, ex);
             await SendErrorResponse(JsonRpcError.InternalError(ex.Message), request.Id);
         }
     }
@@ -164,15 +155,11 @@ public class BlockchainHub(
             };
 
             await SendSuccessResponse(result, request.Id);
-            logger.LogInformation(
-                "Client {ConnectionId} unsubscribed from trades for {Symbol}",
-                Context.ConnectionId,
-                symbol
-            );
+            logger.LogClientUnsubscribed(Context.ConnectionId, symbol);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to unsubscribe from trades for {Symbol}", symbol);
+            logger.LogUnsubscriptionError(symbol, ex);
             await SendErrorResponse(JsonRpcError.InternalError(ex.Message), request.Id);
         }
     }

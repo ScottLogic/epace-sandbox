@@ -11,8 +11,8 @@ namespace DataServer.Api.Services;
 public class BlockchainHubService(
     IBlockchainDataService blockchainDataService,
     IHubContext<BlockchainHub> hubContext,
-    ILogger<BlockchainHubService> logger)
-    : IHostedService
+    ILogger<BlockchainHubService> logger
+) : IHostedService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -3,9 +3,9 @@ using System.Text;
 using System.Text.Json;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
+using DataServer.Application.Logging;
 using DataServer.Connectors.Blockchain;
 using DataServer.Domain.Blockchain;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -14,14 +14,14 @@ namespace DataServer.Tests.Connectors;
 public class BlockchainDataClientTests
 {
     private readonly Mock<IWebSocketClient> _mockWebSocketClient;
-    private readonly Mock<ILogger<BlockchainDataClient>> _mockLogger;
+    private readonly Mock<IApplicationLogger> _mockLogger;
     private readonly BlockchainSettings _settings;
     private readonly BlockchainDataClient _dataClient;
 
     public BlockchainDataClientTests()
     {
         _mockWebSocketClient = new Mock<IWebSocketClient>();
-        _mockLogger = new Mock<ILogger<BlockchainDataClient>>();
+        _mockLogger = new Mock<IApplicationLogger>();
         _settings = new BlockchainSettings { ApiUrl = "ws://localhost:8765", ApiToken = null };
 
         _mockWebSocketClient.Setup(ws => ws.State).Returns(WebSocketState.None);

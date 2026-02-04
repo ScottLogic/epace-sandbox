@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DataServer.Domain\DataServer.Domain.csproj" />
     <ProjectReference Include="..\DataServer.Application\DataServer.Application.csproj" />
+    <ProjectReference Include="..\DataServer.Common\DataServer.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

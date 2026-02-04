@@ -2,6 +2,7 @@ using DataServer.Api.Hubs;
 using DataServer.Api.Services;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
+using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Connectors.Blockchain;
 using DataServer.Infrastructure.Blockchain;
@@ -21,6 +22,7 @@ builder.Services.Configure<BlockchainSettings>(
     builder.Configuration.GetSection(BlockchainSettings.SectionName)
 );
 
+builder.Services.AddSingleton<IApplicationLogger, ApplicationLogger>();
 builder.Services.AddSingleton<IWebSocketClient, WebSocketClientWrapper>();
 builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
 builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
