@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DataServer.Api.Models.JsonRpc;
 
 namespace DataServer.Api.Middleware;
 
@@ -45,6 +46,7 @@ public class GlobalExceptionHandlerMiddleware(RequestDelegate next, Serilog.ILog
     {
         return exception switch
         {
+            JsonRpcException => StatusCodes.Status400BadRequest,
             ArgumentException => StatusCodes.Status400BadRequest,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             OperationCanceledException => 499,
