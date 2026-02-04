@@ -1,32 +1,21 @@
-using System.Net;
 using System.Text.Json;
 
 namespace DataServer.Api.Middleware;
 
-public class GlobalExceptionHandlerMiddleware
+public class GlobalExceptionHandlerMiddleware(
+    RequestDelegate next,
+    ILogger<GlobalExceptionHandlerMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public GlobalExceptionHandlerMiddleware(
-        RequestDelegate next,
-        ILogger<GlobalExceptionHandlerMiddleware> logger
-    )
-    {
-        _next = next;
-        _logger = logger;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
@@ -39,7 +28,7 @@ public class GlobalExceptionHandlerMiddleware
         var statusCode = GetStatusCode(exception);
         var errorResponse = CreateErrorResponse(exception, statusCode);
 
-        _logger.LogError(
+        logger.LogError(
             exception,
             "An unhandled exception occurred while processing {Method} {Path}. Status: {StatusCode}, TraceId: {TraceId}",
             context.Request.Method,
@@ -85,13 +74,5 @@ public class GlobalExceptionHandlerMiddleware
             StatusCodes.Status500InternalServerError => "An internal server error occurred.",
             _ => exception.Message,
         };
-    }
-}
-
-public static class GlobalExceptionHandlerMiddlewareExtensions
-{
-    public static IApplicationBuilder UseGlobalExceptionHandler(this IApplicationBuilder app)
-    {
-        return app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
     }
 }

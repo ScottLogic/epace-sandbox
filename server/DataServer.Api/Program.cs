@@ -31,7 +31,7 @@ builder.Services.AddHostedService<BlockchainHubService>();
 
 var app = builder.Build();
 
-app.UseGlobalExceptionHandler();
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.MapHub<BlockchainHub>("/blockchain");
 
