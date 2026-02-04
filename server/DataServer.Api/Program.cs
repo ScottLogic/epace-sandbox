@@ -2,34 +2,63 @@ using DataServer.Api.Hubs;
 using DataServer.Api.Services;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
+using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Connectors.Blockchain;
 using DataServer.Infrastructure.Blockchain;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .Enrich.FromLogContext()
+    .CreateBootstrapLogger();
 
-builder
-    .Configuration.AddJsonFile("appsettings.json", optional: false)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-    .AddUserSecrets<Program>(optional: true)
-    .AddEnvironmentVariables();
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSignalR();
-builder.Services.AddMemoryCache();
+    builder
+        .Configuration.AddJsonFile("appsettings.json", optional: false)
+        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+        .AddUserSecrets<Program>(optional: true)
+        .AddEnvironmentVariables();
 
-builder.Services.Configure<BlockchainSettings>(
-    builder.Configuration.GetSection(BlockchainSettings.SectionName)
-);
+    builder.Host.UseSerilog(
+        (ctx, services, cfg) =>
+            cfg
+                .ReadFrom.Configuration(ctx.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+    );
 
-builder.Services.AddSingleton<IWebSocketClient, WebSocketClientWrapper>();
-builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
-builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
-builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
+    builder.Services.AddSignalR();
+    builder.Services.AddMemoryCache();
 
-builder.Services.AddHostedService<BlockchainHubService>();
+    builder.Services.Configure<BlockchainSettings>(
+        builder.Configuration.GetSection(BlockchainSettings.SectionName)
+    );
 
-var app = builder.Build();
+    builder.Services.AddScoped<IAppLogger, AppLogger>();
+    builder.Services.AddSingleton<IWebSocketClient, WebSocketClientWrapper>();
+    builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
+    builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
+    builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
 
-app.MapHub<BlockchainHub>("/blockchain");
+    builder.Services.AddHostedService<BlockchainHubService>();
 
-app.Run();
+    var app = builder.Build();
+
+    app.UseSerilogRequestLogging();
+
+    app.MapHub<BlockchainHub>("/blockchain");
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

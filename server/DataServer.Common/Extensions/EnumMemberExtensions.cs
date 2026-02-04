@@ -4,12 +4,11 @@ using DataServer.Common.Mapping;
 
 namespace DataServer.Common.Extensions;
 
-public static class EnumMemberExtensions 
+public static class EnumMemberExtensions
 {
     public static bool TryParseEnumMember<TEnum>(this string value, out TEnum result)
-        where TEnum : struct, Enum
-        => EnumMemberMapper<TEnum>.TryParse(value, out result);
-    
+        where TEnum : struct, Enum => EnumMemberMapper<TEnum>.TryParse(value, out result);
+
     public static string ToEnumMemberValue(this Enum value)
     {
         var type = value.GetType();
@@ -21,8 +20,7 @@ public static class EnumMemberExtensions
         if (field == null)
             return value.ToString();
 
-        var attribute = field
-            .GetCustomAttribute<EnumMemberAttribute>();
+        var attribute = field.GetCustomAttribute<EnumMemberAttribute>();
 
         return attribute?.Value ?? value.ToString();
     }

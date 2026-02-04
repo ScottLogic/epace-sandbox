@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DataServer.Api.Hubs;
 using DataServer.Api.Models.JsonRpc;
+using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Common.Extensions;
 using DataServer.Domain.Blockchain;
@@ -11,8 +12,8 @@ namespace DataServer.Api.Services;
 public class BlockchainHubService(
     IBlockchainDataService blockchainDataService,
     IHubContext<BlockchainHub> hubContext,
-    ILogger<BlockchainHubService> logger)
-    : IHostedService
+    IAppLogger logger
+) : IHostedService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -21,14 +22,14 @@ public class BlockchainHubService(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Starting BlockchainHubService");
+        logger.LogServiceStarting(nameof(BlockchainHubService));
         blockchainDataService.TradeReceived += OnTradeReceived;
         await blockchainDataService.StartAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Stopping BlockchainHubService");
+        logger.LogServiceStopping(nameof(BlockchainHubService));
         blockchainDataService.TradeReceived -= OnTradeReceived;
         await blockchainDataService.StopAsync(cancellationToken);
     }
@@ -63,16 +64,11 @@ public class BlockchainHubService(
 
             await hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", message);
 
-            logger.LogDebug(
-                "Broadcasted trade {TradeId} for {Symbol} to group {GroupName}",
-                trade.TradeId,
-                trade.Symbol,
-                groupName
-            );
+            logger.LogTradeBroadcasted(trade.TradeId, trade.Symbol.ToEnumMemberValue(), groupName);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to broadcast trade {TradeId}", trade.TradeId);
+            logger.LogBroadcastError(trade.TradeId, ex);
         }
     }
 }
