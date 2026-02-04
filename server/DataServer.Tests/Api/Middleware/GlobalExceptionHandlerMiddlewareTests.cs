@@ -1,18 +1,18 @@
 using DataServer.Api.Middleware;
-using DataServer.Application.Logging;
 using Microsoft.AspNetCore.Http;
 using Moq;
+using Serilog;
 
 namespace DataServer.Tests.Api.Middleware;
 
 public class GlobalExceptionHandlerMiddlewareTests
 {
-    private readonly Mock<IAppLogger> _mockLogger;
+    private readonly Mock<ILogger> _mockLogger;
     private readonly DefaultHttpContext _httpContext;
 
     public GlobalExceptionHandlerMiddlewareTests()
     {
-        _mockLogger = new Mock<IAppLogger>();
+        _mockLogger = new Mock<ILogger>();
         _httpContext = new DefaultHttpContext();
         _httpContext.Response.Body = new MemoryStream();
     }

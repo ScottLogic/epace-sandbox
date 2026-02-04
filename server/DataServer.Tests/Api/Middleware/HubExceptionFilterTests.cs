@@ -1,17 +1,17 @@
 using DataServer.Api.Middleware;
-using DataServer.Application.Logging;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
+using Serilog;
 
 namespace DataServer.Tests.Api.Middleware;
 
 public class HubExceptionFilterTests
 {
-    private readonly Mock<IAppLogger> _mockLogger;
+    private readonly Mock<ILogger> _mockLogger;
 
     public HubExceptionFilterTests()
     {
-        _mockLogger = new Mock<IAppLogger>();
+        _mockLogger = new Mock<ILogger>();
     }
 
     [Fact]

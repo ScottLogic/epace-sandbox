@@ -1,6 +1,5 @@
 using System.Text.Json;
 using DataServer.Api.Models.JsonRpc;
-using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Common.Extensions;
 using DataServer.Domain.Blockchain;
@@ -8,7 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DataServer.Api.Hubs;
 
-public class BlockchainHub(IBlockchainDataService blockchainDataService, IAppLogger logger) : Hub
+public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog.ILogger logger) : Hub
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

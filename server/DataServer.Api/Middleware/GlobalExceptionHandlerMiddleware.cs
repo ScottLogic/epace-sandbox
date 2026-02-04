@@ -1,9 +1,8 @@
 using System.Text.Json;
-using DataServer.Application.Logging;
 
 namespace DataServer.Api.Middleware;
 
-public class GlobalExceptionHandlerMiddleware(RequestDelegate next, IAppLogger logger)
+public class GlobalExceptionHandlerMiddleware(RequestDelegate next, Serilog.ILogger logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

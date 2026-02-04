@@ -1,13 +1,12 @@
-using DataServer.Application.Logging;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DataServer.Api.Middleware;
 
 public class HubExceptionFilter : IHubFilter
 {
-    private readonly IAppLogger _logger;
+    private readonly Serilog.ILogger _logger;
 
-    public HubExceptionFilter(IAppLogger logger)
+    public HubExceptionFilter(Serilog.ILogger logger)
     {
         _logger = logger;
     }

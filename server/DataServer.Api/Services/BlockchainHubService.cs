@@ -1,7 +1,6 @@
 using System.Text.Json;
 using DataServer.Api.Hubs;
 using DataServer.Api.Models.JsonRpc;
-using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Common.Extensions;
 using DataServer.Domain.Blockchain;
@@ -12,7 +11,7 @@ namespace DataServer.Api.Services;
 public class BlockchainHubService(
     IBlockchainDataService blockchainDataService,
     IHubContext<BlockchainHub> hubContext,
-    IAppLogger logger
+    Serilog.ILogger logger
 ) : IHostedService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
