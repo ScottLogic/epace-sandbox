@@ -65,6 +65,16 @@ def create_unsubscribe_request(symbol: str) -> str:
     return json.dumps(request)
 
 
+def create_malformed_request() -> str:
+    request = {
+        "jsonrpc": "2.0",
+        "method": "subscribe",
+        "params": {"channel": "invalid_channel", "symbol": "INVALID-SYMBOL"},
+        "id": "bad-request",
+    }
+    return json.dumps(request)
+
+
 def on_message_received(message):
     print_json(message, "Message Received")
 
@@ -131,16 +141,79 @@ async def connect_and_subscribe(symbol: str):
         hub_connection.stop()
 
 
+async def send_malformed_request():
+    hub_connection = (
+        HubConnectionBuilder()
+        .with_url(BLOCKCHAIN_URL)
+        .with_automatic_reconnect(
+            {
+                "type": "raw",
+                "keep_alive_interval": 10,
+                "reconnect_interval": 5,
+                "max_attempts": 5,
+            }
+        )
+        .build()
+    )
+
+    hub_connection.on_open(on_open)
+    hub_connection.on_close(on_close)
+    hub_connection.on_error(on_error)
+    hub_connection.on("ReceiveMessage", on_message_received)
+
+    try:
+        hub_connection.start()
+        print(f"\nConnecting to {BLOCKCHAIN_URL}...")
+
+        await asyncio.sleep(1)
+
+        malformed_request = create_malformed_request()
+        print_json(malformed_request, "Sending Malformed Request")
+        hub_connection.send("SendMessage", [malformed_request])
+
+        await asyncio.sleep(2)
+
+        hub_connection.stop()
+        print("\nDisconnected after receiving error response")
+
+    except Exception as e:
+        print(f"\nError: {e}")
+        print(f"Make sure the server is running at {BLOCKCHAIN_URL}")
+        hub_connection.stop()
+
+
+def show_menu() -> str:
+    print("\nOptions:")
+    print("  1. Subscribe to trades")
+    print("  2. Send malformed request (test error handling)")
+    print("  3. Exit")
+
+    while True:
+        choice = input("\nSelect an option (1-3): ").strip()
+        if choice in ["1", "2", "3"]:
+            return choice
+        print("Invalid choice. Please enter 1, 2, or 3.")
+
+
 def main():
     print("=" * 60)
     print("  Blockchain API SignalR Test Client")
     print("=" * 60)
 
-    symbol = select_symbol()
-    print(f"\nYou selected: {symbol}")
-    input("Press Enter to connect and subscribe...")
+    while True:
+        choice = show_menu()
 
-    asyncio.run(connect_and_subscribe(symbol))
+        if choice == "1":
+            symbol = select_symbol()
+            print(f"\nYou selected: {symbol}")
+            input("Press Enter to connect and subscribe...")
+            asyncio.run(connect_and_subscribe(symbol))
+        elif choice == "2":
+            input("Press Enter to send a malformed request...")
+            asyncio.run(send_malformed_request())
+        elif choice == "3":
+            print("\nGoodbye!")
+            break
 
 
 if __name__ == "__main__":
