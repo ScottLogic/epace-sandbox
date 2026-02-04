@@ -1,10 +1,12 @@
 using DataServer.Api.Hubs;
+using DataServer.Api.Middleware;
 using DataServer.Api.Services;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
 using DataServer.Application.Services;
 using DataServer.Connectors.Blockchain;
 using DataServer.Infrastructure.Blockchain;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +16,10 @@ builder
     .AddUserSecrets<Program>(optional: true)
     .AddEnvironmentVariables();
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.AddFilter<HubExceptionFilter>();
+});
 builder.Services.AddMemoryCache();
 
 builder.Services.Configure<BlockchainSettings>(
@@ -29,6 +34,8 @@ builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
 builder.Services.AddHostedService<BlockchainHubService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.MapHub<BlockchainHub>("/blockchain");
 
