@@ -91,4 +91,54 @@ public class AppLogger(ILogger<AppLogger> logger) : IAppLogger
 
     public void LogBroadcastError(string tradeId, Exception ex) =>
         logger.LogError(ex, "Failed to broadcast trade {TradeId}", tradeId);
+
+    public void LogUnhandledHttpException(
+        string method,
+        string path,
+        int statusCode,
+        string traceId,
+        Exception ex
+    ) =>
+        logger.LogError(
+            ex,
+            "An unhandled exception occurred while processing {Method} {Path}. Status: {StatusCode}, TraceId: {TraceId}",
+            method,
+            path,
+            statusCode,
+            traceId
+        );
+
+    public void LogHubMethodInvocationFailed(
+        string connectionId,
+        string methodName,
+        Exception ex
+    ) =>
+        logger.LogError(
+            ex,
+            "Hub method invocation failed. ConnectionId: {ConnectionId}, Method: {MethodName}, ExceptionType: {ExceptionType}",
+            connectionId,
+            methodName,
+            ex.GetType().Name
+        );
+
+    public void LogHubOnConnectedFailed(string connectionId, Exception ex) =>
+        logger.LogError(
+            ex,
+            "OnConnectedAsync failed. ConnectionId: {ConnectionId}, ExceptionType: {ExceptionType}",
+            connectionId,
+            ex.GetType().Name
+        );
+
+    public void LogHubOnDisconnectedFailed(
+        string connectionId,
+        string? originalException,
+        Exception ex
+    ) =>
+        logger.LogError(
+            ex,
+            "OnDisconnectedAsync failed. ConnectionId: {ConnectionId}, OriginalException: {OriginalException}, ExceptionType: {ExceptionType}",
+            connectionId,
+            originalException,
+            ex.GetType().Name
+        );
 }

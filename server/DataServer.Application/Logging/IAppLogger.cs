@@ -31,4 +31,15 @@ public interface IAppLogger
     void LogServiceStopping(string serviceName);
     void LogTradeBroadcasted(string tradeId, string symbol, string groupName);
     void LogBroadcastError(string tradeId, Exception ex);
+
+    void LogUnhandledHttpException(
+        string method,
+        string path,
+        int statusCode,
+        string traceId,
+        Exception ex
+    );
+    void LogHubMethodInvocationFailed(string connectionId, string methodName, Exception ex);
+    void LogHubOnConnectedFailed(string connectionId, Exception ex);
+    void LogHubOnDisconnectedFailed(string connectionId, string? originalException, Exception ex);
 }

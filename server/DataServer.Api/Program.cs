@@ -1,4 +1,5 @@
 using DataServer.Api.Hubs;
+using DataServer.Api.Middleware;
 using DataServer.Api.Services;
 using DataServer.Application.Configuration;
 using DataServer.Application.Interfaces;
@@ -6,6 +7,7 @@ using DataServer.Application.Logging;
 using DataServer.Application.Services;
 using DataServer.Connectors.Blockchain;
 using DataServer.Infrastructure.Blockchain;
+using Microsoft.AspNetCore.SignalR;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -31,7 +33,10 @@ try
                 .Enrich.FromLogContext()
     );
 
-    builder.Services.AddSignalR();
+    builder.Services.AddSignalR(options =>
+    {
+        options.AddFilter<HubExceptionFilter>();
+    });
     builder.Services.AddMemoryCache();
 
     builder.Services.Configure<BlockchainSettings>(
@@ -47,6 +52,8 @@ try
     builder.Services.AddHostedService<BlockchainHubService>();
 
     var app = builder.Build();
+
+    app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
     app.UseSerilogRequestLogging();
 
