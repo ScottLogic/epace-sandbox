@@ -41,7 +41,14 @@ public class HubExceptionFilterTests
         );
 
         _mockLogger.Verify(
-            x => x.LogHubMethodInvocationFailed("connection-123", It.IsAny<string>(), exception),
+            x =>
+                x.Error(
+                    exception,
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()
+                ),
             Times.Once
         );
     }
@@ -59,7 +66,13 @@ public class HubExceptionFilterTests
 
         _mockLogger.Verify(
             x =>
-                x.LogHubMethodInvocationFailed("test-connection-id", It.IsAny<string>(), exception),
+                x.Error(
+                    exception,
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()
+                ),
             Times.Once
         );
     }
@@ -98,7 +111,10 @@ public class HubExceptionFilterTests
             filter.OnConnectedAsync(mockLifetimeContext, _ => throw exception)
         );
 
-        _mockLogger.Verify(x => x.LogHubOnConnectedFailed("connection-123", exception), Times.Once);
+        _mockLogger.Verify(
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -122,7 +138,14 @@ public class HubExceptionFilterTests
         );
 
         _mockLogger.Verify(
-            x => x.LogHubOnDisconnectedFailed("connection-123", null, exception),
+            x =>
+                x.Error(
+                    exception,
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string>()
+                ),
             Times.Once
         );
     }

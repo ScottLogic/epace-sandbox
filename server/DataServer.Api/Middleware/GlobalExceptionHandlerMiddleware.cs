@@ -26,12 +26,13 @@ public class GlobalExceptionHandlerMiddleware(RequestDelegate next, Serilog.ILog
         var statusCode = GetStatusCode(exception);
         var errorResponse = CreateErrorResponse(exception, statusCode);
 
-        logger.LogUnhandledHttpException(
+        logger.Error(
+            exception,
+            "An unhandled exception occurred while processing {Method} {Path}. Status: {StatusCode}, TraceId: {TraceId}",
             context.Request.Method,
             context.Request.Path,
             statusCode,
-            context.TraceIdentifier,
-            exception
+            context.TraceIdentifier
         );
 
         context.Response.ContentType = "application/json";

@@ -57,14 +57,7 @@ public class GlobalExceptionHandlerMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _mockLogger.Verify(
-            x =>
-                x.LogUnhandledHttpException(
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    StatusCodes.Status500InternalServerError,
-                    It.IsAny<string>(),
-                    exception
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<object[]>()),
             Times.Once
         );
     }
@@ -133,14 +126,7 @@ public class GlobalExceptionHandlerMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _mockLogger.Verify(
-            x =>
-                x.LogUnhandledHttpException(
-                    It.IsAny<string>(),
-                    "/test/path",
-                    It.IsAny<int>(),
-                    It.IsAny<string>(),
-                    exception
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<object[]>()),
             Times.Once
         );
     }
@@ -157,14 +143,7 @@ public class GlobalExceptionHandlerMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _mockLogger.Verify(
-            x =>
-                x.LogUnhandledHttpException(
-                    "POST",
-                    It.IsAny<string>(),
-                    It.IsAny<int>(),
-                    It.IsAny<string>(),
-                    exception
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<object[]>()),
             Times.Once
         );
     }

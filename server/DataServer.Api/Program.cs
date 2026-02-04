@@ -30,13 +30,15 @@ try
     {
         options.AddFilter<HubExceptionFilter>();
     });
-        builder.Services.AddSerilog((services, lc) => lc
-            .ReadFrom.Configuration(builder.Configuration)
-            .ReadFrom.Services(services)
-            .Enrich.FromLogContext()
-            .WriteTo.Console());
+    builder.Services.AddSerilog(
+        (services, lc) =>
+            lc
+                .ReadFrom.Configuration(builder.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+    );
 
-    
     builder.Services.AddMemoryCache();
 
     builder.Services.Configure<BlockchainSettings>(

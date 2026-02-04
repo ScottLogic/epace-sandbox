@@ -25,7 +25,13 @@ public class HubExceptionFilter : IHubFilter
             var connectionId = invocationContext.Context.ConnectionId;
             var methodName = invocationContext.HubMethodName;
 
-            _logger.LogHubMethodInvocationFailed(connectionId, methodName, ex);
+            _logger.Error(
+                ex,
+                "Hub method invocation failed. ConnectionId: {ConnectionId}, Method: {MethodName}, ExceptionType: {ExceptionType}",
+                connectionId,
+                methodName,
+                ex.GetType().Name
+            );
 
             throw;
         }
@@ -44,7 +50,12 @@ public class HubExceptionFilter : IHubFilter
         {
             var connectionId = context.Context.ConnectionId;
 
-            _logger.LogHubOnConnectedFailed(connectionId, ex);
+            _logger.Error(
+                ex,
+                "OnConnectedAsync failed. ConnectionId: {ConnectionId}, ExceptionType: {ExceptionType}",
+                connectionId,
+                ex.GetType().Name
+            );
 
             throw;
         }
@@ -64,7 +75,13 @@ public class HubExceptionFilter : IHubFilter
         {
             var connectionId = context.Context.ConnectionId;
 
-            _logger.LogHubOnDisconnectedFailed(connectionId, exception?.Message, ex);
+            _logger.Error(
+                ex,
+                "OnDisconnectedAsync failed. ConnectionId: {ConnectionId}, OriginalException: {OriginalException}, ExceptionType: {ExceptionType}",
+                connectionId,
+                exception?.Message,
+                ex.GetType().Name
+            );
 
             throw;
         }

@@ -21,14 +21,14 @@ public class BlockchainHubService(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        logger.LogServiceStarting(nameof(BlockchainHubService));
+        logger.Information("Starting {ServiceName}", nameof(BlockchainHubService));
         blockchainDataService.TradeReceived += OnTradeReceived;
         await blockchainDataService.StartAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogServiceStopping(nameof(BlockchainHubService));
+        logger.Information("Stopping {ServiceName}", nameof(BlockchainHubService));
         blockchainDataService.TradeReceived -= OnTradeReceived;
         await blockchainDataService.StopAsync(cancellationToken);
     }
@@ -63,11 +63,16 @@ public class BlockchainHubService(
 
             await hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", message);
 
-            logger.LogTradeBroadcasted(trade.TradeId, trade.Symbol.ToEnumMemberValue(), groupName);
+            logger.Debug(
+                "Broadcasted trade {TradeId} for {Symbol} to group {GroupName}",
+                trade.TradeId,
+                trade.Symbol.ToEnumMemberValue(),
+                groupName
+            );
         }
         catch (Exception ex)
         {
-            logger.LogBroadcastError(trade.TradeId, ex);
+            logger.Error(ex, "Failed to broadcast trade {TradeId}", trade.TradeId);
         }
     }
 }

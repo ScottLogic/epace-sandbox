@@ -19,16 +19,17 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
     private readonly IWebSocketClient _webSocketClient;
     private readonly ILogger _logger;
 
-    public BlockchainDataClient(IOptions<BlockchainSettings> options,
+    public BlockchainDataClient(
+        IOptions<BlockchainSettings> options,
         IWebSocketClient webSocketClient,
-        ILogger logger)
+        ILogger logger
+    )
     {
         _webSocketClient = webSocketClient;
         _logger = logger;
         _options = options.Value;
         _uri = new Uri(_options.ApiUrl);
     }
-
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -127,7 +128,12 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
         var bytes = Encoding.UTF8.GetBytes(json);
         var buffer = new ArraySegment<byte>(bytes);
 
-        await _webSocketClient.SendAsync(buffer, WebSocketMessageType.Text, true, cancellationToken);
+        await _webSocketClient.SendAsync(
+            buffer,
+            WebSocketMessageType.Text,
+            true,
+            cancellationToken
+        );
 
         _logger.Information("Sent message: {Message}", @message);
     }
@@ -192,7 +198,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
         }
         catch (JsonException ex)
         {
-            _logger.Error(ex,"Failed to parse message: {@message}", message);
+            _logger.Error(ex, "Failed to parse message: {@message}", message);
         }
     }
 
