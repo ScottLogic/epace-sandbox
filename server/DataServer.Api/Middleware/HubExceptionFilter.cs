@@ -4,9 +4,9 @@ namespace DataServer.Api.Middleware;
 
 public class HubExceptionFilter : IHubFilter
 {
-    private readonly ILogger<HubExceptionFilter> _logger;
+    private readonly Serilog.ILogger _logger;
 
-    public HubExceptionFilter(ILogger<HubExceptionFilter> logger)
+    public HubExceptionFilter(Serilog.ILogger logger)
     {
         _logger = logger;
     }
@@ -25,7 +25,7 @@ public class HubExceptionFilter : IHubFilter
             var connectionId = invocationContext.Context.ConnectionId;
             var methodName = invocationContext.HubMethodName;
 
-            _logger.LogError(
+            _logger.Error(
                 ex,
                 "Hub method invocation failed. ConnectionId: {ConnectionId}, Method: {MethodName}, ExceptionType: {ExceptionType}",
                 connectionId,
@@ -50,7 +50,7 @@ public class HubExceptionFilter : IHubFilter
         {
             var connectionId = context.Context.ConnectionId;
 
-            _logger.LogError(
+            _logger.Error(
                 ex,
                 "OnConnectedAsync failed. ConnectionId: {ConnectionId}, ExceptionType: {ExceptionType}",
                 connectionId,
@@ -75,7 +75,7 @@ public class HubExceptionFilter : IHubFilter
         {
             var connectionId = context.Context.ConnectionId;
 
-            _logger.LogError(
+            _logger.Error(
                 ex,
                 "OnDisconnectedAsync failed. ConnectionId: {ConnectionId}, OriginalException: {OriginalException}, ExceptionType: {ExceptionType}",
                 connectionId,

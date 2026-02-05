@@ -20,18 +20,33 @@ def print_separator():
     print("\n" + "=" * 60 + "\n")
 
 
-def print_json(data: dict | str, label: str = "Response"):
+def try_parse_json(value: any) -> any:
+    """Attempt to parse a string as JSON; otherwise return the original value."""
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return value
+
+
+def print_json(data: any, label: str = "Response") -> None:
     print_separator()
     print(f"[{label}]")
-    if isinstance(data, str):
-        try:
-            parsed = json.loads(data)
-            print(json.dumps(parsed, indent=2))
-        except json.JSONDecodeError:
-            print(data)
-    else:
-        print(json.dumps(data, indent=2))
 
+    # normalize lists by attempting to parse each item
+    if isinstance(data, list):
+        parsed_items = [try_parse_json(item) for item in data]
+        for item in parsed_items:
+            print(json.dumps(item, indent=2) if isinstance(item, (dict, list)) else item)
+        return
+
+    # non-list data: try parse once
+    parsed = try_parse_json(data)
+    if isinstance(parsed, (dict, list)):
+        print(json.dumps(parsed, indent=2))
+    else:
+        print(parsed)
 
 def select_symbol() -> str:
     print("\nAvailable symbols:")

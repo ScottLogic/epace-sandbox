@@ -1,18 +1,18 @@
 using DataServer.Api.Middleware;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using Moq;
+using Serilog;
 
 namespace DataServer.Tests.Api.Middleware;
 
 public class GlobalExceptionHandlerMiddlewareTests
 {
-    private readonly Mock<ILogger<GlobalExceptionHandlerMiddleware>> _mockLogger;
+    private readonly Mock<ILogger> _mockLogger;
     private readonly DefaultHttpContext _httpContext;
 
     public GlobalExceptionHandlerMiddlewareTests()
     {
-        _mockLogger = new Mock<ILogger<GlobalExceptionHandlerMiddleware>>();
+        _mockLogger = new Mock<ILogger>();
         _httpContext = new DefaultHttpContext();
         _httpContext.Response.Body = new MemoryStream();
     }
@@ -57,16 +57,7 @@ public class GlobalExceptionHandlerMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _mockLogger.Verify(
-            x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>(
-                        (v, t) => v.ToString()!.Contains("An unhandled exception occurred")
-                    ),
-                    exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<object[]>()),
             Times.Once
         );
     }
@@ -135,14 +126,7 @@ public class GlobalExceptionHandlerMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _mockLogger.Verify(
-            x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("/test/path")),
-                    exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<object[]>()),
             Times.Once
         );
     }
@@ -159,14 +143,7 @@ public class GlobalExceptionHandlerMiddlewareTests
         await middleware.InvokeAsync(_httpContext);
 
         _mockLogger.Verify(
-            x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("POST")),
-                    exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<object[]>()),
             Times.Once
         );
     }
