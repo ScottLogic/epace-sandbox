@@ -5,9 +5,7 @@ import sys
 
 from dotenv import load_dotenv
 from signalrcore.hub_connection_builder import HubConnectionBuilder
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from disconnect_controls import DisconnectController, DisconnectMode
+from disconnect_controls import *
 
 load_dotenv()
 

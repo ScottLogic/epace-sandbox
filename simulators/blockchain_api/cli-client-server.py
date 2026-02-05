@@ -1,14 +1,16 @@
 import asyncio
 import json
-import os
 import sys
 import websockets
+import os
+from dotenv import load_dotenv
+from disconnect_controls import *
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from disconnect_controls import DisconnectController, DisconnectMode
+
+load_dotenv()
 
 SYMBOLS = ["ETH-USD", "BTC-USD"]
-WEBSOCKET_URL = "ws://localhost:5000/ws"
+WEBSOCKET_URL = os.getenv("WEBSOCKET_URL")
 
 
 def print_separator():
@@ -120,6 +122,7 @@ async def connect_and_subscribe_with_controls(symbol: str):
                 if user_input:
                     mode = DisconnectMode.from_key(user_input.strip())
                     if mode:
+
                         await controller.handle_command(mode)
                         if mode in (
                             DisconnectMode.GRACEFUL,
@@ -200,7 +203,7 @@ def show_menu() -> str:
 
 def main():
     print("=" * 60)
-    print("  Blockchain API WebSocket Test Client")
+    print("  Blockchain API WebSocket Test Client (Server)")
     print("=" * 60)
 
     while True:
