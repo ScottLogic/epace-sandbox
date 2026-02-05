@@ -3,10 +3,7 @@ using DataServer.Api.Models.JsonRpc;
 
 namespace DataServer.Api.Middleware;
 
-public class GlobalExceptionHandlerMiddleware(
-    RequestDelegate next,
-    ILogger<GlobalExceptionHandlerMiddleware> logger
-)
+public class GlobalExceptionHandlerMiddleware(RequestDelegate next, Serilog.ILogger logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -30,7 +27,7 @@ public class GlobalExceptionHandlerMiddleware(
         var statusCode = GetStatusCode(exception);
         var errorResponse = CreateErrorResponse(exception, statusCode);
 
-        logger.LogError(
+        logger.Error(
             exception,
             "An unhandled exception occurred while processing {Method} {Path}. Status: {StatusCode}, TraceId: {TraceId}",
             context.Request.Method,

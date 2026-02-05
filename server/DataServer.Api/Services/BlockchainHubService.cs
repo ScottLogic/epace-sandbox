@@ -11,8 +11,8 @@ namespace DataServer.Api.Services;
 public class BlockchainHubService(
     IBlockchainDataService blockchainDataService,
     IHubContext<BlockchainHub> hubContext,
-    ILogger<BlockchainHubService> logger)
-    : IHostedService
+    Serilog.ILogger logger
+) : IHostedService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -21,14 +21,14 @@ public class BlockchainHubService(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Starting BlockchainHubService");
+        logger.Information("Starting {ServiceName}", nameof(BlockchainHubService));
         blockchainDataService.TradeReceived += OnTradeReceived;
         await blockchainDataService.StartAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Stopping BlockchainHubService");
+        logger.Information("Stopping {ServiceName}", nameof(BlockchainHubService));
         blockchainDataService.TradeReceived -= OnTradeReceived;
         await blockchainDataService.StopAsync(cancellationToken);
     }
@@ -63,16 +63,16 @@ public class BlockchainHubService(
 
             await hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", message);
 
-            logger.LogDebug(
+            logger.Debug(
                 "Broadcasted trade {TradeId} for {Symbol} to group {GroupName}",
                 trade.TradeId,
-                trade.Symbol,
+                trade.Symbol.ToEnumMemberValue(),
                 groupName
             );
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to broadcast trade {TradeId}", trade.TradeId);
+            logger.Error(ex, "Failed to broadcast trade {TradeId}", trade.TradeId);
         }
     }
 }

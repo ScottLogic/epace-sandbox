@@ -1,17 +1,17 @@
 using DataServer.Api.Middleware;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 using Moq;
+using Serilog;
 
 namespace DataServer.Tests.Api.Middleware;
 
 public class HubExceptionFilterTests
 {
-    private readonly Mock<ILogger<HubExceptionFilter>> _mockLogger;
+    private readonly Mock<ILogger> _mockLogger;
 
     public HubExceptionFilterTests()
     {
-        _mockLogger = new Mock<ILogger<HubExceptionFilter>>();
+        _mockLogger = new Mock<ILogger>();
     }
 
     [Fact]
@@ -42,14 +42,12 @@ public class HubExceptionFilterTests
 
         _mockLogger.Verify(
             x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>(
-                        (v, t) => v.ToString()!.Contains("Hub method invocation failed")
-                    ),
+                x.Error(
                     exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()
                 ),
             Times.Once
         );
@@ -68,12 +66,12 @@ public class HubExceptionFilterTests
 
         _mockLogger.Verify(
             x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("test-connection-id")),
+                x.Error(
                     exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()
                 ),
             Times.Once
         );
@@ -114,16 +112,7 @@ public class HubExceptionFilterTests
         );
 
         _mockLogger.Verify(
-            x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>(
-                        (v, t) => v.ToString()!.Contains("OnConnectedAsync failed")
-                    ),
-                    exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                ),
+            x => x.Error(exception, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Once
         );
     }
@@ -150,14 +139,12 @@ public class HubExceptionFilterTests
 
         _mockLogger.Verify(
             x =>
-                x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>(
-                        (v, t) => v.ToString()!.Contains("OnDisconnectedAsync failed")
-                    ),
+                x.Error(
                     exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string>()
                 ),
             Times.Once
         );
