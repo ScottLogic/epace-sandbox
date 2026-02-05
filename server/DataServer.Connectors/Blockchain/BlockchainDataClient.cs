@@ -175,7 +175,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
     {
         try
         {
-            _logger.Information("Message received: {@message}", message);
+            _logger.Information("Message received: {message}", @message);
 
             using var doc = JsonDocument.Parse(message);
             var root = doc.RootElement;

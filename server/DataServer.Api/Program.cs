@@ -10,14 +10,15 @@ using Microsoft.AspNetCore.SignalR;
 using Serilog;
 using Serilog.Events;
 
+// Logger established here to log program loading 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .Enrich.FromLogContext()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
 try
 {
+    Log.Information("Application is starting");
     var builder = WebApplication.CreateBuilder(args);
 
     builder
@@ -35,8 +36,7 @@ try
             lc
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(services)
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
+                .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
     );
 
     builder.Services.AddMemoryCache();
