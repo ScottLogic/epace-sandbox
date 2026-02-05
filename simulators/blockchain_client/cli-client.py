@@ -1,7 +1,9 @@
 import asyncio
 import json
+import logging
 import os
 import sys
+import time
 
 from dotenv import load_dotenv
 from signalrcore.hub_connection_builder import HubConnectionBuilder
@@ -19,7 +21,6 @@ def print_separator():
 
 
 def try_parse_json(value: any) -> any:
-    """Attempt to parse a string as JSON; otherwise return the original value."""
     if isinstance(value, str):
         try:
             return json.loads(value)
@@ -32,7 +33,6 @@ def print_json(data: any, label: str = "Response") -> None:
     print_separator()
     print(f"[{label}]")
 
-    # normalize lists by attempting to parse each item
     if isinstance(data, list):
         parsed_items = [try_parse_json(item) for item in data]
         for item in parsed_items:
@@ -101,25 +101,27 @@ _current_controller = None
 def on_message_received(message):
     if _current_controller and _current_controller.is_print_paused():
         return
+    print(f"Recieved at: {time.time()}")
     print_json(message, "Message Received")
 
 
 def on_error(error):
-    print(f"\n[Error] {error}")
+    print(f"[Error] {error}")
 
 
 def on_close():
-    print("\n[Connection Closed]")
+    print("[Connection Closed]")
 
 
 def on_open():
-    print("\n[Connection Opened]")
+    print("[Connection Opened]")
 
 
 def build_hub_connection():
     hub_connection = (
         HubConnectionBuilder()
         .with_url(BLOCKCHAIN_URL)
+        .configure_logging(logging_level=logging.CRITICAL)
         .with_automatic_reconnect(
             {
                 "type": "raw",
@@ -144,44 +146,40 @@ class SignalRDisconnectController(DisconnectController):
         self.symbol = symbol
 
     async def on_graceful_disconnect(self):
-        print("\n[Graceful Disconnect] Unsubscribing and closing connection...")
+        print("[Graceful Disconnect] Unsubscribing and closing connection...")
         try:
             unsubscribe_request = create_unsubscribe_request(self.symbol)
             self.hub.send("SendMessage", [unsubscribe_request])
             await asyncio.sleep(1.0)
             if self.hub.transport and self.hub.transport.state == 1:
+                print("[Graceful Disconnect] connection not closed by host - closing hub connection manually")
                 self.hub.transport.stop()
-                await asyncio.sleep(0.5)
-            self.hub.stop()
-            print("[Graceful Disconnect] Connection closed cleanly")
+            else:
+                print("[Graceful Disconnect] Connection closed cleanly")
         except Exception as e:
             print(f"[Graceful Disconnect] Error: {e}")
 
     async def on_abrupt_disconnect(self):
-        print("\n[Abrupt Disconnect] Terminating connection immediately...")
+        print("[Abrupt Disconnect] Terminating connection immediately...")
         try:
-            if hasattr(self.hub, "_transport") and self.hub._transport:
-                self.hub._transport.close()
-            else:
-                self.hub.stop()
-            print("[Abrupt Disconnect] Connection terminated")
+            if self.hub.transport:
+                self.hub.transport.stop()
         except Exception as e:
             print(f"[Abrupt Disconnect] Error: {e}")
 
     async def on_temporary_drop(self, delay_seconds: int):
-        print(f"\n[Temporary Drop] Dropping connection for {delay_seconds} seconds...")
+        print(f"[Temporary Drop] Dropping connection for {delay_seconds} seconds...")
         try:
-            if hasattr(self.hub, "_transport") and self.hub._transport:
-                self.hub._transport.close()
-            else:
+            if self.hub.transport:
                 self.hub.stop()
             print("[Temporary Drop] Connection dropped")
         except Exception as e:
             print(f"[Temporary Drop] Error: {e}")
 
     async def on_reconnect(self):
-        print("\n[Reconnect] Rebuilding connection...")
+        print("[Reconnect] Rebuilding connection...")
         try:
+            self.hub.stop()
             self.hub = build_hub_connection()
             self.hub.start()
             await asyncio.sleep(1)
@@ -200,7 +198,7 @@ async def connect_and_subscribe_with_controls(symbol: str):
 
     try:
         hub_connection.start()
-        print(f"\nConnecting to {BLOCKCHAIN_URL}...")
+        print(f"Connecting to {BLOCKCHAIN_URL}...")
 
         await asyncio.sleep(1)
 
@@ -208,7 +206,7 @@ async def connect_and_subscribe_with_controls(symbol: str):
         print_json(subscribe_request, "Sending Subscribe Request")
         hub_connection.send("SendMessage", [subscribe_request])
 
-        print(f"\nSubscribed to trades for {symbol}")
+        print(f"Subscribed to trades for {symbol}")
         print("Listening for trade updates...")
         print_separator()
 
@@ -233,7 +231,7 @@ async def connect_and_subscribe_with_controls(symbol: str):
                     controller.input_handler.show_commands()
 
     except KeyboardInterrupt:
-        print("\n\nInterrupted by user, performing graceful disconnect...")
+        print("\nInterrupted by user, performing graceful disconnect...")
         await controller.on_graceful_disconnect()
     except Exception as e:
         print(f"\nError: {e}")
@@ -254,7 +252,7 @@ async def connect_and_subscribe(symbol: str):
         print_json(subscribe_request, "Sending Subscribe Request")
         hub_connection.send("SendMessage", [subscribe_request])
 
-        print(f"\nSubscribed to trades for {symbol}")
+        print(f"Subscribed to trades for {symbol}")
         print("Listening for trade updates... (Press Ctrl+C to stop)")
         print_separator()
 
@@ -262,7 +260,7 @@ async def connect_and_subscribe(symbol: str):
             await asyncio.sleep(1)
 
     except KeyboardInterrupt:
-        print("\n\nUnsubscribing and disconnecting...")
+        print("Unsubscribing and disconnecting...")
         unsubscribe_request = create_unsubscribe_request(symbol)
         hub_connection.send("SendMessage", [unsubscribe_request])
         await asyncio.sleep(0.5)
@@ -290,7 +288,7 @@ async def send_malformed_request():
         await asyncio.sleep(2)
 
         hub_connection.stop()
-        print("\nDisconnected after receiving error response")
+        print("Disconnected after receiving error response")
 
     except Exception as e:
         print(f"\nError: {e}")
@@ -303,13 +301,13 @@ def show_menu() -> str:
     print("  1. Subscribe to trades (with disconnect controls)")
     print("  2. Subscribe to trades (simple mode)")
     print("  3. Send malformed request (test error handling)")
-    print("  4. Exit")
+    print("  4|q. Exit")
 
     while True:
         choice = input("\nSelect an option (1-4): ").strip()
-        if choice in ["1", "2", "3", "4"]:
+        if choice in ["1", "2", "3", "4", "q"]:
             return choice
-        print("Invalid choice. Please enter 1, 2, 3, or 4.")
+        print("Invalid choice. Please enter 1, 2, 3, 4 or q.")
 
 
 def main():
@@ -323,17 +321,17 @@ def main():
         if choice == "1":
             symbol = select_symbol()
             print(f"\nYou selected: {symbol}")
-            input("Press Enter to connect and subscribe...")
+            input("Press Enter to connect and subscribe...\n")
             asyncio.run(connect_and_subscribe_with_controls(symbol))
         elif choice == "2":
             symbol = select_symbol()
             print(f"\nYou selected: {symbol}")
-            input("Press Enter to connect and subscribe...")
+            input("Press Enter to connect and subscribe...\n")
             asyncio.run(connect_and_subscribe(symbol))
         elif choice == "3":
-            input("Press Enter to send a malformed request...")
+            input("Press Enter to send a malformed request...\n")
             asyncio.run(send_malformed_request())
-        elif choice == "4":
+        elif choice == "4" or choice == "q":
             print("\nGoodbye!")
             break
 
