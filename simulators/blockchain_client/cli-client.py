@@ -36,7 +36,9 @@ def print_json(data: any, label: str = "Response") -> None:
     if isinstance(data, list):
         parsed_items = [try_parse_json(item) for item in data]
         for item in parsed_items:
-            print(json.dumps(item, indent=2) if isinstance(item, (dict, list)) else item)
+            print(
+                json.dumps(item, indent=2) if isinstance(item, (dict, list)) else item
+            )
         return
 
     # non-list data: try parse once
@@ -45,6 +47,7 @@ def print_json(data: any, label: str = "Response") -> None:
         print(json.dumps(parsed, indent=2))
     else:
         print(parsed)
+
 
 def select_symbol() -> str:
     print("\nAvailable symbols:")
@@ -92,7 +95,12 @@ def create_malformed_request() -> str:
     return json.dumps(request)
 
 
+_current_controller = None
+
+
 def on_message_received(message):
+    if _current_controller and _current_controller.is_print_paused():
+        return
     print_json(message, "Message Received")
 
 
@@ -140,7 +148,10 @@ class SignalRDisconnectController(DisconnectController):
         try:
             unsubscribe_request = create_unsubscribe_request(self.symbol)
             self.hub.send("SendMessage", [unsubscribe_request])
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)
+            if self.hub.transport and self.hub.transport.state == 1:
+                self.hub.transport.stop()
+                await asyncio.sleep(0.5)
             self.hub.stop()
             print("[Graceful Disconnect] Connection closed cleanly")
         except Exception as e:
@@ -182,8 +193,10 @@ class SignalRDisconnectController(DisconnectController):
 
 
 async def connect_and_subscribe_with_controls(symbol: str):
+    global _current_controller
     hub_connection = build_hub_connection()
     controller = SignalRDisconnectController(hub_connection, symbol)
+    _current_controller = controller
 
     try:
         hub_connection.start()

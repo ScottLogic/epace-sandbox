@@ -103,15 +103,16 @@ async def connect_and_subscribe_with_controls(symbol: str):
                     try:
                         message = await asyncio.wait_for(current_ws.recv(), timeout=0.5)
                         data = json.loads(message)
-                        print_json(data, "Trade Update")
+                        if not controller.is_print_paused():
+                            print_json(data, "Trade Update")
                     except asyncio.TimeoutError:
                         continue
                     except websockets.exceptions.ConnectionClosed:
-                        if controller._running:
+                        if controller._running and not controller.is_print_paused():
                             print("\n[Connection lost]")
                         break
             except Exception as e:
-                if controller._running:
+                if controller._running and not controller.is_print_paused():
                     print(f"\n[Receive error] {e}")
 
         async def handle_input():
@@ -122,7 +123,6 @@ async def connect_and_subscribe_with_controls(symbol: str):
                 if user_input:
                     mode = DisconnectMode.from_key(user_input.strip())
                     if mode:
-
                         await controller.handle_command(mode)
                         if mode in (
                             DisconnectMode.GRACEFUL,

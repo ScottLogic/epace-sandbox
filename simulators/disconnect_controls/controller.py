@@ -9,6 +9,10 @@ class DisconnectController(ABC):
     def __init__(self):
         self.input_handler = InputHandler()
         self._running = True
+        self._print_paused = False
+
+    def is_print_paused(self) -> bool:
+        return self._print_paused
 
     @abstractmethod
     async def on_graceful_disconnect(self):
@@ -31,13 +35,17 @@ class DisconnectController(ABC):
 
     async def handle_command(self, mode: DisconnectMode):
         if mode == DisconnectMode.QUIT:
+            self._print_paused = True
             await self.on_graceful_disconnect()
             self.stop()
             return
 
         if mode.requires_confirmation:
+            self._print_paused = True
             confirmed, delay = await self.input_handler.get_confirmation(mode)
             if not confirmed:
+                self._print_paused = False
+                self.input_handler.show_commands()
                 return
 
         if mode == DisconnectMode.GRACEFUL:
@@ -51,6 +59,8 @@ class DisconnectController(ABC):
             print(f"Reconnecting in {delay} seconds...")
             await asyncio.sleep(delay)
             await self.on_reconnect()
+            self._print_paused = False
+            self.input_handler.show_commands()
 
     async def run_input_loop(self):
         self.input_handler.show_commands()
