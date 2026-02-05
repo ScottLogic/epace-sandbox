@@ -56,8 +56,9 @@ class DisconnectController(ABC):
             self.stop()
         elif mode == DisconnectMode.TEMPORARY:
             await self.on_temporary_drop(delay)
-            print(f"Reconnecting in {delay} seconds...")
-            await asyncio.sleep(delay)
+            for i in range(delay):
+                print(f"Reconnecting in {delay - i} seconds...")
+                await asyncio.sleep(1)
             await self.on_reconnect()
             self._print_paused = False
             self.input_handler.show_commands()
