@@ -7,10 +7,11 @@ using DataServer.Application.Services;
 using DataServer.Connectors.Blockchain;
 using DataServer.Infrastructure.Blockchain;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 
-// Logger established here to log program loading 
+// Logger established here to log program loading
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .WriteTo.Console()
@@ -44,9 +45,20 @@ try
     builder.Services.Configure<BlockchainSettings>(
         builder.Configuration.GetSection(BlockchainSettings.SectionName)
     );
+    builder.Services.Configure<ConnectionManagerSettings>(
+        builder.Configuration.GetSection(ConnectionManagerSettings.SectionName)
+    );
 
     builder.Services.AddSingleton<IWebSocketClient, WebSocketClientWrapper>();
     builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
+    builder.Services.AddSingleton<IDelayProvider, TaskDelayProvider>();
+    builder.Services.AddSingleton<IConnectionManager>(sp =>
+    {
+        var connectable = sp.GetRequiredService<IBlockchainDataClient>();
+        var delayProvider = sp.GetRequiredService<IDelayProvider>();
+        var settings = sp.GetRequiredService<IOptions<ConnectionManagerSettings>>().Value;
+        return new ConnectionManager(connectable, delayProvider, settings);
+    });
     builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
     builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
 

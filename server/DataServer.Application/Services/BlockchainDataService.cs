@@ -7,30 +7,33 @@ public class BlockchainDataService : IBlockchainDataService
 {
     private readonly IBlockchainDataClient _dataClient;
     private readonly IBlockchainDataRepository _repository;
+    private readonly IConnectionManager _connectionManager;
     private EventHandler<TradeUpdate>? _tradeReceivedHandler;
 
     public event EventHandler<TradeUpdate>? TradeReceived;
 
     public BlockchainDataService(
         IBlockchainDataClient dataClient,
-        IBlockchainDataRepository repository
+        IBlockchainDataRepository repository,
+        IConnectionManager connectionManager
     )
     {
         _dataClient = dataClient;
         _repository = repository;
+        _connectionManager = connectionManager;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         _tradeReceivedHandler = (sender, trade) => _ = OnTradeReceivedAsync(trade);
         _dataClient.TradeReceived += _tradeReceivedHandler;
-        await _dataClient.ConnectAsync(cancellationToken);
+        await _connectionManager.StartAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         _dataClient.TradeReceived -= _tradeReceivedHandler;
-        await _dataClient.DisconnectAsync(cancellationToken);
+        await _connectionManager.StopAsync(cancellationToken);
     }
 
     public async Task SubscribeToTradesAsync(

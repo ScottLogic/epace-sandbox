@@ -10,38 +10,53 @@ public class BlockchainDataServiceTests
 {
     private readonly Mock<IBlockchainDataClient> _mockDataSource;
     private readonly Mock<IBlockchainDataRepository> _mockRepository;
+    private readonly Mock<IConnectionManager> _mockConnectionManager;
     private readonly BlockchainDataService _service;
 
     public BlockchainDataServiceTests()
     {
         _mockDataSource = new Mock<IBlockchainDataClient>();
         _mockRepository = new Mock<IBlockchainDataRepository>();
-        _service = new BlockchainDataService(_mockDataSource.Object, _mockRepository.Object);
+        _mockConnectionManager = new Mock<IConnectionManager>();
+        _service = new BlockchainDataService(
+            _mockDataSource.Object,
+            _mockRepository.Object,
+            _mockConnectionManager.Object
+        );
     }
 
     [Fact]
-    public async Task StartAsync_CallsConnectAsyncOnDataSource()
+    public async Task StartAsync_CallsStartAsyncOnConnectionManager()
     {
-        _mockDataSource.Verify(ds => ds.ConnectAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _mockConnectionManager.Verify(
+            cm => cm.StartAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
 
         await _service.StartAsync();
 
-        _mockDataSource.Verify(ds => ds.ConnectAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockConnectionManager.Verify(
+            cm => cm.StartAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
-    public async Task StopAsync_CallsDisconnectAsyncOnDataSource()
+    public async Task StopAsync_CallsStopAsyncOnConnectionManager()
     {
         await _service.StartAsync();
 
-        _mockDataSource.Verify(
-            ds => ds.DisconnectAsync(It.IsAny<CancellationToken>()),
+        _mockConnectionManager.Verify(
+            cm => cm.StopAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
 
         await _service.StopAsync();
 
-        _mockDataSource.Verify(ds => ds.DisconnectAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockConnectionManager.Verify(
+            cm => cm.StopAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
