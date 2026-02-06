@@ -10,6 +10,7 @@ class DisconnectController(ABC):
         self.input_handler = InputHandler()
         self._running = True
         self._print_paused = False
+        self._should_reconnect = False
 
     def is_print_paused(self) -> bool:
         return self._print_paused
@@ -59,9 +60,9 @@ class DisconnectController(ABC):
             for i in range(delay):
                 print(f"Reconnecting in {delay - i} seconds...")
                 await asyncio.sleep(1)
-            await self.on_reconnect()
+            self._should_reconnect = True
             self._print_paused = False
-            self.input_handler.show_commands()
+            self.stop()
 
     async def run_input_loop(self):
         self.input_handler.show_commands()

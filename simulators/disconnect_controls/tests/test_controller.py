@@ -114,7 +114,7 @@ class TestDisconnectControllerAsync:
         assert controller._running is False
 
     @pytest.mark.asyncio
-    async def test_handle_temporary_calls_reconnect_after_delay(self):
+    async def test_handle_temporary_sets_should_reconnect_and_stops(self):
         controller = ConcreteDisconnectController()
         with patch.object(
             controller.input_handler,
@@ -125,4 +125,5 @@ class TestDisconnectControllerAsync:
             with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
                 await controller.handle_command(DisconnectMode.TEMPORARY)
                 mock_sleep.assert_called_once_with(1)
-                assert controller.reconnect_called is True
+                assert controller._should_reconnect is True
+                assert controller._running is False

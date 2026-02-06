@@ -177,66 +177,60 @@ class SignalRDisconnectController(DisconnectController):
             print(f"[Temporary Drop] Error: {e}")
 
     async def on_reconnect(self):
-        print("[Reconnect] Rebuilding connection...")
-        try:
-            self.hub.stop()
-            self.hub = build_hub_connection()
-            self.hub.start()
-            await asyncio.sleep(1)
-            subscribe_request = create_subscribe_request(self.symbol)
-            self.hub.send("SendMessage", [subscribe_request])
-            print(f"[Reconnect] Reconnected and resubscribed to {self.symbol}")
-        except Exception as e:
-            print(f"[Reconnect] Error: {e}")
+        pass
 
 
 async def connect_and_subscribe_with_controls(symbol: str):
     global _current_controller
-    hub_connection = build_hub_connection()
-    controller = SignalRDisconnectController(hub_connection, symbol)
-    _current_controller = controller
+    should_connect = True
 
-    try:
-        hub_connection.start()
-        print(f"Connecting to {BLOCKCHAIN_URL}...")
+    while should_connect:
+        should_connect = False
+        hub_connection = build_hub_connection()
+        controller = SignalRDisconnectController(hub_connection, symbol)
+        _current_controller = controller
 
-        await asyncio.sleep(1)
+        try:
+            hub_connection.start()
+            print(f"Connecting to {BLOCKCHAIN_URL}...")
 
-        subscribe_request = create_subscribe_request(symbol)
-        print_json(subscribe_request, "Sending Subscribe Request")
-        hub_connection.send("SendMessage", [subscribe_request])
+            await asyncio.sleep(1)
 
-        print(f"Subscribed to trades for {symbol}")
-        print("Listening for trade updates...")
-        print_separator()
+            subscribe_request = create_subscribe_request(symbol)
+            print_json(subscribe_request, "Sending Subscribe Request")
+            hub_connection.send("SendMessage", [subscribe_request])
 
-        controller.input_handler.show_commands()
+            print(f"Subscribed to trades for {symbol}")
+            print("Listening for trade updates...")
+            print_separator()
 
-        while controller._running:
-            user_input = await asyncio.to_thread(
-                lambda: input() if sys.stdin.isatty() else ""
-            )
-            if user_input:
-                mode = DisconnectMode.from_key(user_input.strip())
-                if mode:
-                    await controller.handle_command(mode)
-                    if mode in (
-                        DisconnectMode.GRACEFUL,
-                        DisconnectMode.ABRUPT,
-                        DisconnectMode.QUIT,
-                    ):
-                        break
-                else:
-                    print(f"Unknown command: {user_input}")
-                    controller.input_handler.show_commands()
+            controller.input_handler.show_commands()
 
-    except KeyboardInterrupt:
-        print("\nInterrupted by user, performing graceful disconnect...")
-        await controller.on_graceful_disconnect()
-    except Exception as e:
-        print(f"\nError: {e}")
-        print(f"Make sure the server is running at {BLOCKCHAIN_URL}")
-        hub_connection.stop()
+            while controller._running:
+                user_input = await asyncio.to_thread(
+                    lambda: input() if sys.stdin.isatty() else ""
+                )
+                if user_input:
+                    mode = DisconnectMode.from_key(user_input.strip())
+                    if mode:
+                        await controller.handle_command(mode)
+                        if not controller._running:
+                            break
+                    else:
+                        print(f"Unknown command: {user_input}")
+                        controller.input_handler.show_commands()
+
+            if controller._should_reconnect:
+                print("\n[Reconnect] Re-establishing connection...")
+                should_connect = True
+
+        except KeyboardInterrupt:
+            print("\nInterrupted by user, performing graceful disconnect...")
+            await controller.on_graceful_disconnect()
+        except Exception as e:
+            print(f"\nError: {e}")
+            print(f"Make sure the server is running at {BLOCKCHAIN_URL}")
+            hub_connection.stop()
 
 
 async def connect_and_subscribe(symbol: str):

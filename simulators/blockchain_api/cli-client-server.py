@@ -36,7 +36,6 @@ class WebSocketDisconnectController(DisconnectController):
         super().__init__()
         self.ws = websocket
         self.symbol = symbol
-        self._reconnect_ws = None
 
     async def on_graceful_disconnect(self):
         print("\n[Graceful Disconnect] Sending unsubscribe and closing connection...")
@@ -66,83 +65,77 @@ class WebSocketDisconnectController(DisconnectController):
             print(f"[Temporary Drop] Error: {e}")
 
     async def on_reconnect(self):
-        print("\n[Reconnect] Rebuilding connection...")
-        try:
-            self._reconnect_ws = await websockets.connect(WEBSOCKET_URL)
-            self.ws = self._reconnect_ws
-            subscribe_request = create_subscribe_request(self.symbol)
-            await self.ws.send(json.dumps(subscribe_request))
-            print(f"[Reconnect] Reconnected and resubscribed to {self.symbol}")
-        except Exception as e:
-            print(f"[Reconnect] Error: {e}")
-
-    def get_current_websocket(self):
-        return self._reconnect_ws if self._reconnect_ws else self.ws
+        pass
 
 
 async def connect_and_subscribe_with_controls(symbol: str):
-    request = create_subscribe_request(symbol)
-    print_json(request, "Sending Request")
+    should_connect = True
 
-    try:
-        ws = await websockets.connect(WEBSOCKET_URL)
-        await ws.send(json.dumps(request))
+    while should_connect:
+        should_connect = False
+        request = create_subscribe_request(symbol)
+        print_json(request, "Sending Request")
 
-        print(f"\nConnected to {WEBSOCKET_URL}")
-        print(f"Subscribed to trades for {symbol}")
-        print("Listening for trade updates...")
-        print_separator()
+        try:
+            ws = await websockets.connect(WEBSOCKET_URL)
+            await ws.send(json.dumps(request))
 
-        controller = WebSocketDisconnectController(ws, symbol)
-        controller.input_handler.show_commands()
+            print(f"\nConnected to {WEBSOCKET_URL}")
+            print(f"Subscribed to trades for {symbol}")
+            print("Listening for trade updates...")
+            print_separator()
 
-        async def receive_messages():
-            try:
-                while controller._running:
-                    current_ws = controller.get_current_websocket()
-                    try:
-                        message = await asyncio.wait_for(current_ws.recv(), timeout=0.5)
-                        data = json.loads(message)
-                        if not controller.is_print_paused():
-                            print_json(data, "Trade Update")
-                    except asyncio.TimeoutError:
-                        continue
-                    except websockets.exceptions.ConnectionClosed:
-                        if controller._running and not controller.is_print_paused():
-                            print("\n[Connection lost]")
-                        break
-            except Exception as e:
-                if controller._running and not controller.is_print_paused():
-                    print(f"\n[Receive error] {e}")
+            controller = WebSocketDisconnectController(ws, symbol)
+            controller.input_handler.show_commands()
 
-        async def handle_input():
-            while controller._running:
-                user_input = await asyncio.to_thread(
-                    lambda: input() if sys.stdin.isatty() else ""
-                )
-                if user_input:
-                    mode = DisconnectMode.from_key(user_input.strip())
-                    if mode:
-                        await controller.handle_command(mode)
-                        if mode in (
-                            DisconnectMode.GRACEFUL,
-                            DisconnectMode.ABRUPT,
-                            DisconnectMode.QUIT,
-                        ):
+            async def receive_messages():
+                try:
+                    while controller._running:
+                        try:
+                            message = await asyncio.wait_for(
+                                controller.ws.recv(), timeout=0.5
+                            )
+                            data = json.loads(message)
+                            if not controller.is_print_paused():
+                                print_json(data, "Trade Update")
+                        except asyncio.TimeoutError:
+                            continue
+                        except websockets.exceptions.ConnectionClosed:
+                            if controller._running and not controller.is_print_paused():
+                                print("\n[Connection lost]")
                             break
-                    else:
-                        print(f"Unknown command: {user_input}")
-                        controller.input_handler.show_commands()
+                except Exception as e:
+                    if controller._running and not controller.is_print_paused():
+                        print(f"\n[Receive error] {e}")
 
-        await asyncio.gather(receive_messages(), handle_input())
+            async def handle_input():
+                while controller._running:
+                    user_input = await asyncio.to_thread(
+                        lambda: input() if sys.stdin.isatty() else ""
+                    )
+                    if user_input:
+                        mode = DisconnectMode.from_key(user_input.strip())
+                        if mode:
+                            await controller.handle_command(mode)
+                            if not controller._running:
+                                break
+                        else:
+                            print(f"Unknown command: {user_input}")
+                            controller.input_handler.show_commands()
 
-    except websockets.exceptions.ConnectionClosed:
-        print("\nConnection closed by server")
-    except ConnectionRefusedError:
-        print(f"\nError: Could not connect to {WEBSOCKET_URL}")
-        print("Make sure the Flask server is running with 'flask run'")
-    except KeyboardInterrupt:
-        print("\n\nDisconnected by user")
+            await asyncio.gather(receive_messages(), handle_input())
+
+            if controller._should_reconnect:
+                print("\n[Reconnect] Re-establishing connection...")
+                should_connect = True
+
+        except websockets.exceptions.ConnectionClosed:
+            print("\nConnection closed by server")
+        except ConnectionRefusedError:
+            print(f"\nError: Could not connect to {WEBSOCKET_URL}")
+            print("Make sure the Flask server is running with 'flask run'")
+        except KeyboardInterrupt:
+            print("\n\nDisconnected by user")
 
 
 async def connect_and_subscribe(symbol: str):
