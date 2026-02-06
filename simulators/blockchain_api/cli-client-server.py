@@ -185,13 +185,13 @@ def show_menu() -> str:
     print("\nOptions:")
     print("  1. Subscribe to trades (with disconnect controls)")
     print("  2. Subscribe to trades (simple mode)")
-    print("  3. Exit")
+    print("  3|q. Exit")
 
     while True:
         choice = input("\nSelect an option (1-3): ").strip()
-        if choice in ["1", "2", "3"]:
+        if choice in ["1", "2", "3", "q"]:
             return choice
-        print("Invalid choice. Please enter 1, 2, or 3.")
+        print("Invalid choice. Please enter 1, 2, 3 or q.")
 
 
 def main():
@@ -212,7 +212,7 @@ def main():
             print(f"\nYou selected: {symbol}")
             input("Press Enter to connect and subscribe...")
             asyncio.run(connect_and_subscribe(symbol))
-        elif choice == "3":
+        elif choice == "3" or choice == "q":
             print("\nGoodbye!")
             break
 
