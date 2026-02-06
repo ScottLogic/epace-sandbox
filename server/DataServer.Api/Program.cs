@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.SignalR;
 using Serilog;
 using Serilog.Events;
 
-// Logger established here to log program loading 
+// Logger established here to log program loading
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .WriteTo.Console()
