@@ -43,14 +43,9 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
 
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
-        _logger.Information("Connecting to WebSocket at {Uri}", _uri);
-
         await _webSocketClient.ConnectAsync(_uri, cancellationToken);
-
         _receiveCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _receiveTask = ReceiveMessagesAsync(_receiveCts.Token);
-
-        _logger.Information("Connected successfully to WebSocket at {Uri}", _uri);
     }
 
     public async Task DisconnectAsync(CancellationToken cancellationToken = default)
@@ -75,7 +70,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
             catch (OperationCanceledException) { }
         }
 
-        _logger.Information("Disconnected from WebSocket at {Uri}", _uri);
+        _logger.Information("Disconnected from Blockchain API at {Uri}", _uri);
     }
 
     public async Task SubscribeToTradesAsync(
@@ -168,6 +163,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
         catch (WebSocketException ex)
         {
             _logger.Error(ex, "Websocket error occured on {Uri}", _uri);
+            await ConnectAsync(cancellationToken);
         }
     }
 

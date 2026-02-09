@@ -41,6 +41,7 @@ public class ResilientWebSocketClient(
         CancellationToken cancellationToken
     )
     {
+        logger.Information("{client}: Disconnecting from websocket", nameof(ResilientWebSocketClient));
         return GetConnectedClient().CloseAsync(closeStatus, statusDescription, cancellationToken);
     }
 
@@ -51,6 +52,7 @@ public class ResilientWebSocketClient(
         CancellationToken cancellationToken
     )
     {
+        // logger.Information("Sent message: {Message}", @buffer);
         return GetConnectedClient().SendAsync(buffer, messageType, endOfMessage, cancellationToken);
     }
 
@@ -59,6 +61,7 @@ public class ResilientWebSocketClient(
         CancellationToken cancellationToken
     )
     {
+        // logger.Information("Received message: {Message}", @buffer);
         return GetConnectedClient().ReceiveAsync(buffer, cancellationToken);
     }
 
