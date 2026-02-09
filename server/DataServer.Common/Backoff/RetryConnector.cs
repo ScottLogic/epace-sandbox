@@ -1,14 +1,7 @@
 namespace DataServer.Common.Backoff;
 
-public class RetryConnector
+public class RetryConnector(IBackoffStrategy backoffStrategy)
 {
-    private readonly IBackoffStrategy _backoffStrategy;
-
-    public RetryConnector(IBackoffStrategy backoffStrategy)
-    {
-        _backoffStrategy = backoffStrategy;
-    }
-
     public async Task ExecuteWithRetryAsync(Func<Task> action, CancellationToken token)
     {
         var attemptNumber = 0;
@@ -27,7 +20,7 @@ public class RetryConnector
             catch
             {
                 attemptNumber++;
-                var delay = _backoffStrategy.GetDelay(attemptNumber);
+                var delay = backoffStrategy.GetDelay(attemptNumber);
                 await Task.Delay(delay, token);
             }
         }
