@@ -69,18 +69,23 @@ public class ExponentialBackoffStrategyTests
     }
 
     [Theory]
-    [InlineData(0, 1)]
-    [InlineData(1, 2)]
-    [InlineData(2, 4)]
-    [InlineData(3, 8)]
-    [InlineData(4, 16)]
-    public void GetDelay_CalculatesExponentialDelayCorrectly(int attempt, int expectedSeconds)
+    [InlineData(2.0, 0, 1)]
+    [InlineData(2.0, 1, 2)]
+    [InlineData(2.0, 2, 4)]
+    [InlineData(2.0, 3, 8)]
+    [InlineData(2.0, 4, 16)]
+    [InlineData(3.0, 0, 1)]
+    [InlineData(3.0, 1, 3)]
+    [InlineData(3.0, 2, 9)]
+    [InlineData(3.0, 3, 27)]
+    [InlineData(3.0, 4, 64)]
+    public void GetDelay_CalculatesExponentialDelayCorrectly(double multiplier, int attempt, int expectedSeconds)
     {
         var options = new BackoffOptions
         {
             InitialDelay = TimeSpan.FromSeconds(1),
-            Multiplier = 2.0,
-            MaxDelay = TimeSpan.FromSeconds(60),
+            Multiplier = multiplier,
+            MaxDelay = TimeSpan.FromSeconds(64),
         };
         var strategy = new ExponentialBackoffStrategy(options);
 
