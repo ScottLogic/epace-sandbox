@@ -207,4 +207,90 @@ describe('SignalRRpcConnection', () => {
       expect(state).toBe('disconnected');
     });
   });
+
+  describe('debug logging', () => {
+    let logger: (message?: unknown, ...optionalParams: unknown[]) => void;
+    let debugConn: SignalRRpcConnection;
+
+    beforeEach(() => {
+      logger = vi.fn() as (message?: unknown, ...optionalParams: unknown[]) => void;
+      const hub = createMockHubConnection();
+      mockHub = hub;
+      debugConn = new SignalRRpcConnection(hub as unknown as HubConnection, {
+        debug: true,
+        logger,
+      });
+    });
+
+    it('should log on connect', async () => {
+      await debugConn.connect();
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] starting connection');
+      expect(logger).toHaveBeenCalledWith('[SignalR] connected');
+    });
+
+    it('should log on connect failure', async () => {
+      mockHub.start.mockRejectedValue(new Error('fail'));
+
+      await expect(debugConn.connect()).rejects.toThrow('fail');
+      expect(logger).toHaveBeenCalledWith('[SignalR] start failed', expect.any(Error));
+    });
+
+    it('should log on disconnect', async () => {
+      await debugConn.connect();
+      await debugConn.disconnect();
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] stopping connection');
+      expect(logger).toHaveBeenCalledWith('[SignalR] disconnected');
+    });
+
+    it('should log on send', async () => {
+      await debugConn.connect();
+      await debugConn.send('{"test":true}');
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] send', expect.objectContaining({ data: '{"test":true}' }));
+    });
+
+    it('should log on message received', () => {
+      mockHub._simulateMessage('ReceiveMessage', 'hello');
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] message received', expect.objectContaining({ message: 'hello' }));
+    });
+
+    it('should log on close', async () => {
+      await debugConn.connect();
+      mockHub._simulateClose();
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] connection closed', expect.any(Object));
+    });
+
+    it('should log on reconnecting', async () => {
+      await debugConn.connect();
+      mockHub._simulateReconnecting();
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] reconnecting', expect.any(Object));
+    });
+
+    it('should log on reconnected', async () => {
+      await debugConn.connect();
+      mockHub._simulateReconnected();
+
+      expect(logger).toHaveBeenCalledWith('[SignalR] reconnected', expect.any(Object));
+    });
+
+    it('should not log when debug is false', async () => {
+      const silentLogger = vi.fn() as (message?: unknown, ...optionalParams: unknown[]) => void;
+      const hub = createMockHubConnection();
+      const silentConn = new SignalRRpcConnection(hub as unknown as HubConnection, {
+        debug: false,
+        logger: silentLogger,
+      });
+
+      await silentConn.connect();
+      await silentConn.send('data');
+      await silentConn.disconnect();
+
+      expect(silentLogger).not.toHaveBeenCalled();
+    });
+  });
 });
