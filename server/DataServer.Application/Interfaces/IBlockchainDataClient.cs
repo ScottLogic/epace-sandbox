@@ -13,4 +13,6 @@ public interface IBlockchainDataClient
 
     event EventHandler<TradeUpdate>? TradeReceived;
     event EventHandler<TradeResponse>? SubscriptionConfirmed;
+    event EventHandler? ConnectionLost;
+    event EventHandler? ConnectionRestored;
 }

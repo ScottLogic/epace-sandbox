@@ -11,6 +11,8 @@ public class StubBlockchainDataClient : IBlockchainDataClient
 
     public event EventHandler<TradeUpdate>? TradeReceived;
     public event EventHandler<TradeResponse>? SubscriptionConfirmed;
+    public event EventHandler? ConnectionLost;
+    public event EventHandler? ConnectionRestored;
 
     public bool IsConnected => _isConnected;
 

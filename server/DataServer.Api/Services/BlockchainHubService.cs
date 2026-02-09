@@ -23,6 +23,8 @@ public class BlockchainHubService(
     {
         logger.Information("Starting {ServiceName}", nameof(BlockchainHubService));
         blockchainDataService.TradeReceived += OnTradeReceived;
+        blockchainDataService.ConnectionLost += OnConnectionLost;
+        blockchainDataService.ConnectionRestored += OnConnectionRestored;
         await blockchainDataService.StartAsync(cancellationToken);
     }
 
@@ -30,12 +32,64 @@ public class BlockchainHubService(
     {
         logger.Information("Stopping {ServiceName}", nameof(BlockchainHubService));
         blockchainDataService.TradeReceived -= OnTradeReceived;
+        blockchainDataService.ConnectionLost -= OnConnectionLost;
+        blockchainDataService.ConnectionRestored -= OnConnectionRestored;
         await blockchainDataService.StopAsync(cancellationToken);
     }
 
     private void OnTradeReceived(object? sender, TradeUpdate trade)
     {
         _ = BroadcastTradeAsync(trade);
+    }
+
+    private void OnConnectionLost(object? sender, EventArgs args)
+    {
+        _ = NotifyConnectionLostAsync();
+    }
+
+    private void OnConnectionRestored(object? sender, EventArgs args)
+    {
+        _ = NotifyConnectionRestoredAsync();
+    }
+
+    private async Task NotifyConnectionLostAsync()
+    {
+        try
+        {
+            var notification = JsonRpcNotification.Create(
+                "connection.lost",
+                new { reason = "WebSocket connection to data source was lost" }
+            );
+
+            var message = JsonSerializer.Serialize(notification, JsonOptions);
+            await hubContext.Clients.All.SendAsync("ReceiveMessage", message);
+
+            logger.Warning("Notified all clients of connection loss");
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to notify clients of connection loss");
+        }
+    }
+
+    private async Task NotifyConnectionRestoredAsync()
+    {
+        try
+        {
+            var notification = JsonRpcNotification.Create(
+                "connection.restored",
+                new { action = "resubscribe" }
+            );
+
+            var message = JsonSerializer.Serialize(notification, JsonOptions);
+            await hubContext.Clients.All.SendAsync("ReceiveMessage", message);
+
+            logger.Information("Notified all clients to resubscribe after connection restore");
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to notify clients of connection restore");
+        }
     }
 
     private async Task BroadcastTradeAsync(TradeUpdate trade)

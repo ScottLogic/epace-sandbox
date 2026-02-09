@@ -18,6 +18,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
     private readonly Uri _uri;
     private readonly IWebSocketClient _webSocketClient;
     private readonly ILogger _logger;
+    private readonly HashSet<Symbol> _activeSubscriptions = [];
 
     public BlockchainDataClient(
         IOptions<BlockchainSettings> options,
@@ -38,6 +39,8 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
 
     public event EventHandler<TradeUpdate>? TradeReceived;
     public event EventHandler<TradeResponse>? SubscriptionConfirmed;
+    public event EventHandler? ConnectionLost;
+    public event EventHandler? ConnectionRestored;
 
     public bool IsConnected => _webSocketClient.State == WebSocketState.Open;
 
@@ -80,6 +83,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
     {
         var request = CreateSubscriptionRequest(SubscriptionAction.Subscribe, symbol);
         await SendMessageAsync(request, cancellationToken);
+        _activeSubscriptions.Add(symbol);
         _logger.Information("Subscribed to trades: {Symbol}", symbol.ToEnumMemberValue());
     }
 
@@ -90,6 +94,7 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
     {
         var request = CreateSubscriptionRequest(SubscriptionAction.Unsubscribe, symbol);
         await SendMessageAsync(request, cancellationToken);
+        _activeSubscriptions.Remove(symbol);
         _logger.Information("Unsubscribed from trades: {Symbol}", symbol.ToEnumMemberValue());
     }
 
@@ -149,7 +154,11 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     _logger.Information("WebSocket closed by server at {Uri}", _uri);
-                    break;
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        await HandleConnectionLostAsync(cancellationToken);
+                    }
+                    return;
                 }
 
                 if (result.MessageType == WebSocketMessageType.Text)
@@ -163,7 +172,10 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
         catch (WebSocketException ex)
         {
             _logger.Error(ex, "Websocket error occured on {Uri}", _uri);
-            await ConnectAsync(cancellationToken);
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await HandleConnectionLostAsync(cancellationToken);
+            }
         }
     }
 
@@ -266,6 +278,26 @@ public class BlockchainDataClient : IBlockchainDataClient, IDisposable
         );
 
         TradeReceived?.Invoke(this, trade);
+    }
+
+    private async Task HandleConnectionLostAsync(CancellationToken cancellationToken)
+    {
+        ConnectionLost?.Invoke(this, EventArgs.Empty);
+
+        await ConnectAsync(cancellationToken);
+        await ResubscribeAsync(cancellationToken);
+
+        ConnectionRestored?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async Task ResubscribeAsync(CancellationToken cancellationToken)
+    {
+        foreach (var symbol in _activeSubscriptions)
+        {
+            var request = CreateSubscriptionRequest(SubscriptionAction.Subscribe, symbol);
+            await SendMessageAsync(request, cancellationToken);
+            _logger.Information("Resubscribed to trades: {Symbol}", symbol.ToEnumMemberValue());
+        }
     }
 
     public void Dispose()
