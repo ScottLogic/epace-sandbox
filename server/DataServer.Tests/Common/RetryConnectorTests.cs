@@ -1,5 +1,7 @@
 using DataServer.Common.Backoff;
+using Microsoft.Extensions.Options;
 using Moq;
+using Serilog;
 
 namespace DataServer.Tests.Common;
 
@@ -9,7 +11,8 @@ public class RetryConnectorTests
     public async Task ExecuteWithRetryAsync_SuccessOnFirstAttempt_DoesNotRetry()
     {
         var mockStrategy = new Mock<IBackoffStrategy>();
-        var connector = new RetryConnector(mockStrategy.Object);
+        var mockLogger = new Mock<ILogger>();
+        var connector = new RetryConnector(mockStrategy.Object, mockLogger.Object);
         var callCount = 0;
 
         await connector.ExecuteWithRetryAsync(
@@ -29,8 +32,9 @@ public class RetryConnectorTests
     public async Task ExecuteWithRetryAsync_FailsThenSucceeds_RetriesOnce()
     {
         var mockStrategy = new Mock<IBackoffStrategy>();
+        var mockLogger = new Mock<ILogger>();
         mockStrategy.Setup(s => s.GetDelay(It.IsAny<int>())).Returns(TimeSpan.FromMilliseconds(1));
-        var connector = new RetryConnector(mockStrategy.Object);
+        var connector = new RetryConnector(mockStrategy.Object, mockLogger.Object);
         var callCount = 0;
 
         await connector.ExecuteWithRetryAsync(
@@ -52,10 +56,11 @@ public class RetryConnectorTests
     public async Task ExecuteWithRetryAsync_CancellationRequested_StopsRetrying()
     {
         var mockStrategy = new Mock<IBackoffStrategy>();
+        var mockLogger = new Mock<ILogger>();
         mockStrategy
             .Setup(s => s.GetDelay(It.IsAny<int>()))
             .Returns(TimeSpan.FromMilliseconds(100));
-        var connector = new RetryConnector(mockStrategy.Object);
+        var connector = new RetryConnector(mockStrategy.Object, mockLogger.Object);
         var cts = new CancellationTokenSource();
         var callCount = 0;
 
@@ -77,7 +82,8 @@ public class RetryConnectorTests
     public async Task ExecuteWithRetryAsync_CancellationDuringAction_ThrowsOperationCanceledException()
     {
         var mockStrategy = new Mock<IBackoffStrategy>();
-        var connector = new RetryConnector(mockStrategy.Object);
+        var mockLogger = new Mock<ILogger>();
+        var connector = new RetryConnector(mockStrategy.Object, mockLogger.Object);
         var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -93,8 +99,9 @@ public class RetryConnectorTests
     public async Task ExecuteWithRetryAsync_MultipleFailures_IncrementsAttemptNumber()
     {
         var mockStrategy = new Mock<IBackoffStrategy>();
+        var mockLogger = new Mock<ILogger>();
         mockStrategy.Setup(s => s.GetDelay(It.IsAny<int>())).Returns(TimeSpan.FromMilliseconds(1));
-        var connector = new RetryConnector(mockStrategy.Object);
+        var connector = new RetryConnector(mockStrategy.Object, mockLogger.Object);
         var callCount = 0;
 
         await connector.ExecuteWithRetryAsync(
@@ -123,8 +130,11 @@ public class RetryConnectorTests
             Multiplier = 2.0,
             MaxDelay = TimeSpan.FromSeconds(1),
         };
-        var strategy = new ExponentialBackoffStrategy(options);
-        var connector = new RetryConnector(strategy);
+        var mockOptions = new Mock<IOptions<BackoffOptions>>();
+        mockOptions.Setup(s => s.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
+        var mockLogger = new Mock<ILogger>();
+        var connector = new RetryConnector(strategy, mockLogger.Object);
         var callCount = 0;
         var timestamps = new List<DateTimeOffset>();
 
@@ -148,7 +158,8 @@ public class RetryConnectorTests
     public async Task ExecuteWithRetryAsync_PreCancelledToken_ThrowsImmediately()
     {
         var mockStrategy = new Mock<IBackoffStrategy>();
-        var connector = new RetryConnector(mockStrategy.Object);
+        var mockLogger = new Mock<ILogger>();
+        var connector = new RetryConnector(mockStrategy.Object, mockLogger.Object);
         var cts = new CancellationTokenSource();
         cts.Cancel();
         var callCount = 0;

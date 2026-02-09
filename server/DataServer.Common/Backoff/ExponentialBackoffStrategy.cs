@@ -1,13 +1,16 @@
+using Microsoft.Extensions.Options;
+
 namespace DataServer.Common.Backoff;
 
-public class ExponentialBackoffStrategy(BackoffOptions options) : IBackoffStrategy
+public class ExponentialBackoffStrategy(IOptions<BackoffOptions> options) : IBackoffStrategy
 {
+    private readonly BackoffOptions _options = options.Value; 
     public TimeSpan GetDelay(int attemptNumber)
     {
         var delay = TimeSpan.FromTicks(
-            (long)(options.InitialDelay.Ticks * Math.Pow(options.Multiplier, attemptNumber))
+            (long)(_options.InitialDelay.Ticks * Math.Pow(_options.Multiplier, attemptNumber))
         );
 
-        return delay > options.MaxDelay ? options.MaxDelay : delay;
+        return delay > _options.MaxDelay ? _options.MaxDelay : delay;
     }
 }

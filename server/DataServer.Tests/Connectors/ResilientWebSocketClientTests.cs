@@ -18,7 +18,7 @@ public class ResilientWebSocketClientTests
     {
         _mockStrategy = new Mock<IBackoffStrategy>();
         _mockStrategy.Setup(s => s.GetDelay(It.IsAny<int>())).Returns(TimeSpan.FromMilliseconds(1));
-        _retryConnector = new RetryConnector(_mockStrategy.Object);
+        _retryConnector = new RetryConnector(_mockStrategy.Object, _logger);
     }
 
     [Fact]

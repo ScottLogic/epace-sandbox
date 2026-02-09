@@ -47,15 +47,14 @@ try
     );
     builder.Services.Configure<BackoffOptions>(
         builder.Configuration.GetSection(BackoffOptions.SectionName));
-
-    builder.Services.AddHostedService<BlockchainHubService>();
     
     builder.Services.AddSingleton<IBackoffStrategy, ExponentialBackoffStrategy>();
     builder.Services.AddSingleton<RetryConnector>();
     builder.Services.AddSingleton<IWebSocketClient, ResilientWebSocketClient>();
     builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
     builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
-    builder.Services.AddScoped<IBlockchainDataService, BlockchainDataService>();
+    builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
+    builder.Services.AddHostedService<BlockchainHubService>();
     
     var app = builder.Build();
     

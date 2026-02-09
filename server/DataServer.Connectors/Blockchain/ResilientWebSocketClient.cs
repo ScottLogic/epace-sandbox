@@ -5,45 +5,34 @@ using Serilog;
 
 namespace DataServer.Connectors.Blockchain;
 
-public class ResilientWebSocketClient : IWebSocketClient
+public class ResilientWebSocketClient(
+    RetryConnector retryConnector,
+    Func<IWebSocketClient> socketFactory,
+    ILogger logger)
+    : IWebSocketClient
 {
-    private readonly RetryConnector _retryConnector;
-    private readonly Func<IWebSocketClient> _socketFactory;
     private IWebSocketClient? _inner;
-
-    private readonly ILogger _logger;
 
     public ResilientWebSocketClient(RetryConnector retryConnector, ILogger logger)
         : this(retryConnector, () => new WebSocketClientWrapper(), logger) { }
-
-    public ResilientWebSocketClient(
-        RetryConnector retryConnector,
-        Func<IWebSocketClient> socketFactory,
-        ILogger logger
-    )
-    {
-        _retryConnector = retryConnector;
-        _socketFactory = socketFactory;
-        _logger = logger;
-    }
 
     public WebSocketState State => _inner?.State ?? WebSocketState.None;
 
     public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to connect to WebSocket at {Uri} with retry", uri);
+        logger.Information("Attempting to connect to WebSocket at {Uri} with retry", uri);
 
-        await _retryConnector.ExecuteWithRetryAsync(
+        await retryConnector.ExecuteWithRetryAsync(
             () =>
             {
                 _inner?.Dispose();
-                _inner = _socketFactory();
+                _inner = socketFactory();
                 return _inner.ConnectAsync(uri, cancellationToken);
             },
             cancellationToken
         );
 
-        _logger.Information("Successfully connected to WebSocket at {Uri}", uri);
+        logger.Information("Successfully connected to WebSocket at {Uri}", uri);
     }
 
     public Task CloseAsync(
