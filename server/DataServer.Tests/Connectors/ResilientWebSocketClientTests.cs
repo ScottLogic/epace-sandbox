@@ -3,6 +3,7 @@ using DataServer.Application.Interfaces;
 using DataServer.Common.Backoff;
 using DataServer.Connectors.Blockchain;
 using Moq;
+using Serilog;
 
 namespace DataServer.Tests.Connectors;
 
@@ -10,6 +11,7 @@ public class ResilientWebSocketClientTests
 {
     private readonly Mock<IBackoffStrategy> _mockStrategy;
     private readonly RetryConnector _retryConnector;
+    private readonly ILogger _logger = new Mock<ILogger>().Object;
     private readonly Uri _uri = new("ws://localhost:1234");
 
     public ResilientWebSocketClientTests()
@@ -23,7 +25,11 @@ public class ResilientWebSocketClientTests
     public async Task ConnectAsync_SucceedsOnFirstTry_DelegatesToRetryConnector()
     {
         var mockSocket = new Mock<IWebSocketClient>();
-        var client = new ResilientWebSocketClient(_retryConnector, () => mockSocket.Object);
+        var client = new ResilientWebSocketClient(
+            _retryConnector,
+            () => mockSocket.Object,
+            _logger
+        );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
 
@@ -51,7 +57,8 @@ public class ResilientWebSocketClientTests
             {
                 callCount++;
                 return callCount == 1 ? mockFirst.Object : mockSecond.Object;
-            }
+            },
+            _logger
         );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
@@ -81,7 +88,8 @@ public class ResilientWebSocketClientTests
             {
                 callCount++;
                 return callCount == 1 ? mockFirst.Object : mockSecond.Object;
-            }
+            },
+            _logger
         );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
@@ -94,7 +102,8 @@ public class ResilientWebSocketClientTests
     {
         var client = new ResilientWebSocketClient(
             _retryConnector,
-            () => Mock.Of<IWebSocketClient>()
+            () => Mock.Of<IWebSocketClient>(),
+            _logger
         );
         var buffer = new ArraySegment<byte>(new byte[1]);
 
@@ -108,7 +117,8 @@ public class ResilientWebSocketClientTests
     {
         var client = new ResilientWebSocketClient(
             _retryConnector,
-            () => Mock.Of<IWebSocketClient>()
+            () => Mock.Of<IWebSocketClient>(),
+            _logger
         );
         var buffer = new ArraySegment<byte>(new byte[1]);
 
@@ -122,7 +132,8 @@ public class ResilientWebSocketClientTests
     {
         var client = new ResilientWebSocketClient(
             _retryConnector,
-            () => Mock.Of<IWebSocketClient>()
+            () => Mock.Of<IWebSocketClient>(),
+            _logger
         );
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -134,7 +145,11 @@ public class ResilientWebSocketClientTests
     public async Task SendAsync_AfterConnect_DelegatesToInnerClient()
     {
         var mockSocket = new Mock<IWebSocketClient>();
-        var client = new ResilientWebSocketClient(_retryConnector, () => mockSocket.Object);
+        var client = new ResilientWebSocketClient(
+            _retryConnector,
+            () => mockSocket.Object,
+            _logger
+        );
         var buffer = new ArraySegment<byte>(new byte[] { 1, 2, 3 });
 
         await client.ConnectAsync(_uri, CancellationToken.None);
@@ -156,7 +171,11 @@ public class ResilientWebSocketClientTests
             .Setup(s => s.ReceiveAsync(buffer, CancellationToken.None))
             .ReturnsAsync(expectedResult);
 
-        var client = new ResilientWebSocketClient(_retryConnector, () => mockSocket.Object);
+        var client = new ResilientWebSocketClient(
+            _retryConnector,
+            () => mockSocket.Object,
+            _logger
+        );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
         var result = await client.ReceiveAsync(buffer, CancellationToken.None);
@@ -169,7 +188,11 @@ public class ResilientWebSocketClientTests
     public async Task CloseAsync_AfterConnect_DelegatesToInnerClient()
     {
         var mockSocket = new Mock<IWebSocketClient>();
-        var client = new ResilientWebSocketClient(_retryConnector, () => mockSocket.Object);
+        var client = new ResilientWebSocketClient(
+            _retryConnector,
+            () => mockSocket.Object,
+            _logger
+        );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
         await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
@@ -184,7 +207,11 @@ public class ResilientWebSocketClientTests
     public async Task Dispose_DisposesInnerClient()
     {
         var mockSocket = new Mock<IWebSocketClient>();
-        var client = new ResilientWebSocketClient(_retryConnector, () => mockSocket.Object);
+        var client = new ResilientWebSocketClient(
+            _retryConnector,
+            () => mockSocket.Object,
+            _logger
+        );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
         client.Dispose();
@@ -197,7 +224,8 @@ public class ResilientWebSocketClientTests
     {
         var client = new ResilientWebSocketClient(
             _retryConnector,
-            () => Mock.Of<IWebSocketClient>()
+            () => Mock.Of<IWebSocketClient>(),
+            _logger
         );
         client.Dispose();
     }
@@ -207,7 +235,8 @@ public class ResilientWebSocketClientTests
     {
         var client = new ResilientWebSocketClient(
             _retryConnector,
-            () => Mock.Of<IWebSocketClient>()
+            () => Mock.Of<IWebSocketClient>(),
+            _logger
         );
         Assert.Equal(WebSocketState.None, client.State);
     }
@@ -217,7 +246,11 @@ public class ResilientWebSocketClientTests
     {
         var mockSocket = new Mock<IWebSocketClient>();
         mockSocket.Setup(s => s.State).Returns(WebSocketState.Open);
-        var client = new ResilientWebSocketClient(_retryConnector, () => mockSocket.Object);
+        var client = new ResilientWebSocketClient(
+            _retryConnector,
+            () => mockSocket.Object,
+            _logger
+        );
 
         await client.ConnectAsync(_uri, CancellationToken.None);
 
