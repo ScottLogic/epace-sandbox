@@ -4,8 +4,6 @@ public class BackoffOptions
 {
     public const string SectionName = "Backoff";
 
-    public BackoffType Strategy { get; set; } = BackoffType.Exponential;
-
     public TimeSpan InitialDelay { get; set; } = TimeSpan.FromSeconds(1);
 
     public TimeSpan MaxDelay { get; set; } = TimeSpan.FromSeconds(30);
