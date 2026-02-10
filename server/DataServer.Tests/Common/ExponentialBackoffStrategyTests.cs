@@ -1,4 +1,6 @@
 using DataServer.Common.Backoff;
+using Microsoft.Extensions.Options;
+using Moq;
 
 namespace DataServer.Tests.Common;
 
@@ -12,8 +14,10 @@ public class ExponentialBackoffStrategyTests
             InitialDelay = TimeSpan.FromSeconds(1),
             Multiplier = 2.0,
             MaxDelay = TimeSpan.FromSeconds(30),
-        };
-        var strategy = new ExponentialBackoffStrategy(options);
+        }; 
+        var mockOptions = new Mock<IOptions<BackoffOptions>>(); 
+        mockOptions.SetupGet(o => o.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
 
         var delay = strategy.GetDelay(0);
 
@@ -29,7 +33,9 @@ public class ExponentialBackoffStrategyTests
             Multiplier = 2.0,
             MaxDelay = TimeSpan.FromSeconds(30),
         };
-        var strategy = new ExponentialBackoffStrategy(options);
+        var mockOptions = new Mock<IOptions<BackoffOptions>>(); 
+        mockOptions.SetupGet(o => o.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
 
         var delay = strategy.GetDelay(1);
 
@@ -45,7 +51,9 @@ public class ExponentialBackoffStrategyTests
             Multiplier = 2.0,
             MaxDelay = TimeSpan.FromSeconds(30),
         };
-        var strategy = new ExponentialBackoffStrategy(options);
+        var mockOptions = new Mock<IOptions<BackoffOptions>>(); 
+        mockOptions.SetupGet(o => o.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
 
         var delay = strategy.GetDelay(2);
 
@@ -61,7 +69,9 @@ public class ExponentialBackoffStrategyTests
             Multiplier = 2.0,
             MaxDelay = TimeSpan.FromSeconds(10),
         };
-        var strategy = new ExponentialBackoffStrategy(options);
+        var mockOptions = new Mock<IOptions<BackoffOptions>>(); 
+        mockOptions.SetupGet(o => o.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
 
         var delay = strategy.GetDelay(10);
 
@@ -87,7 +97,9 @@ public class ExponentialBackoffStrategyTests
             Multiplier = multiplier,
             MaxDelay = TimeSpan.FromSeconds(64),
         };
-        var strategy = new ExponentialBackoffStrategy(options);
+        var mockOptions = new Mock<IOptions<BackoffOptions>>(); 
+        mockOptions.SetupGet(o => o.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
 
         var delay = strategy.GetDelay(attempt);
 
@@ -103,7 +115,9 @@ public class ExponentialBackoffStrategyTests
             Multiplier = 3.0,
             MaxDelay = TimeSpan.FromSeconds(100),
         };
-        var strategy = new ExponentialBackoffStrategy(options);
+        var mockOptions = new Mock<IOptions<BackoffOptions>>(); 
+        mockOptions.SetupGet(o => o.Value).Returns(options);
+        var strategy = new ExponentialBackoffStrategy(mockOptions.Object);
 
         var delay = strategy.GetDelay(2);
 
