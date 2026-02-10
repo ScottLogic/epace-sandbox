@@ -143,6 +143,56 @@ public class BlockchainDataServiceTests
     }
 
     [Fact]
+    public async Task WhenConnectionLost_RaisesConnectionLostEvent()
+    {
+        var connectionLostRaised = false;
+        _service.ConnectionLost += (sender, args) => connectionLostRaised = true;
+        await _service.StartAsync();
+
+        _mockDataSource.Raise(ds => ds.ConnectionLost += null, this, EventArgs.Empty);
+
+        Assert.True(connectionLostRaised);
+    }
+
+    [Fact]
+    public async Task WhenConnectionRestored_RaisesConnectionRestoredEvent()
+    {
+        var connectionRestoredRaised = false;
+        _service.ConnectionRestored += (sender, args) => connectionRestoredRaised = true;
+        await _service.StartAsync();
+
+        _mockDataSource.Raise(ds => ds.ConnectionRestored += null, this, EventArgs.Empty);
+
+        Assert.True(connectionRestoredRaised);
+    }
+
+    [Fact]
+    public async Task AfterStopAsync_ConnectionLostEventDoesNotPropagate()
+    {
+        var connectionLostRaised = false;
+        _service.ConnectionLost += (sender, args) => connectionLostRaised = true;
+        await _service.StartAsync();
+        await _service.StopAsync();
+
+        _mockDataSource.Raise(ds => ds.ConnectionLost += null, this, EventArgs.Empty);
+
+        Assert.False(connectionLostRaised);
+    }
+
+    [Fact]
+    public async Task AfterStopAsync_ConnectionRestoredEventDoesNotPropagate()
+    {
+        var connectionRestoredRaised = false;
+        _service.ConnectionRestored += (sender, args) => connectionRestoredRaised = true;
+        await _service.StartAsync();
+        await _service.StopAsync();
+
+        _mockDataSource.Raise(ds => ds.ConnectionRestored += null, this, EventArgs.Empty);
+
+        Assert.False(connectionRestoredRaised);
+    }
+
+    [Fact]
     public async Task AfterStopAsync_TradeReceivedEventDoesNotCallRepository()
     {
         var tradeBeforeStop = CreateTestTrade(Symbol.BtcUsd, "trade-before-stop");
