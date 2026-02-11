@@ -10,13 +10,19 @@ public class BlockchainDataServiceTests
 {
     private readonly Mock<IBlockchainDataClient> _mockDataSource;
     private readonly Mock<IBlockchainDataRepository> _mockRepository;
+    private readonly SubscriptionManager _subscriptionManager;
     private readonly BlockchainDataService _service;
 
     public BlockchainDataServiceTests()
     {
         _mockDataSource = new Mock<IBlockchainDataClient>();
         _mockRepository = new Mock<IBlockchainDataRepository>();
-        _service = new BlockchainDataService(_mockDataSource.Object, _mockRepository.Object);
+        _subscriptionManager = new SubscriptionManager();
+        _service = new BlockchainDataService(
+            _mockDataSource.Object,
+            _mockRepository.Object,
+            _subscriptionManager
+        );
     }
 
     [Fact]
@@ -45,14 +51,9 @@ public class BlockchainDataServiceTests
     }
 
     [Fact]
-    public async Task SubscribeToTradesAsync_CallsSubscribeOnDataSourceWithCorrectSymbol()
+    public async Task SubscribeToTradesAsync_FirstSubscriber_CallsSubscribeOnDataSource()
     {
         const Symbol symbol = Symbol.BtcUsd;
-
-        _mockDataSource.Verify(
-            ds => ds.SubscribeToTradesAsync(symbol, It.IsAny<CancellationToken>()),
-            Times.Never
-        );
 
         await _service.SubscribeToTradesAsync(symbol);
 
@@ -63,20 +64,46 @@ public class BlockchainDataServiceTests
     }
 
     [Fact]
-    public async Task UnsubscribeFromTradesAsync_CallsUnsubscribeOnDataSourceWithCorrectSymbol()
+    public async Task SubscribeToTradesAsync_MultipleSubscribers_CallsSubscribeOnDataSourceOnlyOnce()
     {
         const Symbol symbol = Symbol.BtcUsd;
 
-        _mockDataSource.Verify(
-            ds => ds.UnsubscribeFromTradesAsync(symbol, It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        await _service.SubscribeToTradesAsync(symbol);
+        await _service.SubscribeToTradesAsync(symbol);
+        await _service.SubscribeToTradesAsync(symbol);
 
+        _mockDataSource.Verify(
+            ds => ds.SubscribeToTradesAsync(symbol, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UnsubscribeFromTradesAsync_LastSubscriber_CallsUnsubscribeOnDataSource()
+    {
+        const Symbol symbol = Symbol.BtcUsd;
+
+        await _service.SubscribeToTradesAsync(symbol);
         await _service.UnsubscribeFromTradesAsync(symbol);
 
         _mockDataSource.Verify(
             ds => ds.UnsubscribeFromTradesAsync(symbol, It.IsAny<CancellationToken>()),
             Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UnsubscribeFromTradesAsync_RemainingSubscribers_DoesNotCallUnsubscribeOnDataSource()
+    {
+        const Symbol symbol = Symbol.BtcUsd;
+
+        await _service.SubscribeToTradesAsync(symbol);
+        await _service.SubscribeToTradesAsync(symbol);
+        await _service.UnsubscribeFromTradesAsync(symbol);
+
+        _mockDataSource.Verify(
+            ds => ds.UnsubscribeFromTradesAsync(symbol, It.IsAny<CancellationToken>()),
+            Times.Never
         );
     }
 
