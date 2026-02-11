@@ -18,6 +18,7 @@ interface SymbolSubscription {
   templateUrl: './blockchain.html',
   styleUrl: './blockchain.css',
 })
+
 export class Blockchain implements OnInit, OnDestroy {
   subscriptions: SymbolSubscription[] = [];
   connectionError = '';
