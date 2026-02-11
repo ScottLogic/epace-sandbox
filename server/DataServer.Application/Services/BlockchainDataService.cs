@@ -7,7 +7,7 @@ public class BlockchainDataService : IBlockchainDataService
 {
     private readonly IBlockchainDataClient _dataClient;
     private readonly IBlockchainDataRepository _repository;
-    private readonly SubscriptionManager _subscriptionManager;
+    private readonly ISubscriptionManager _subscriptionManager;
     private EventHandler<TradeUpdate>? _tradeReceivedHandler;
     private EventHandler? _connectionLostHandler;
     private EventHandler? _connectionRestoredHandler;
@@ -19,7 +19,7 @@ public class BlockchainDataService : IBlockchainDataService
     public BlockchainDataService(
         IBlockchainDataClient dataClient,
         IBlockchainDataRepository repository,
-        SubscriptionManager subscriptionManager
+        ISubscriptionManager subscriptionManager
     )
     {
         _dataClient = dataClient;

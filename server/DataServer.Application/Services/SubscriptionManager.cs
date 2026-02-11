@@ -2,10 +2,10 @@ using DataServer.Domain.Blockchain;
 
 namespace DataServer.Application.Services;
 
-public class SubscriptionManager
+public class SubscriptionManager : ISubscriptionManager
 {
     private readonly Dictionary<Symbol, int> _referenceCounts = new();
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     public bool ShouldSubscribeDownstream(Symbol symbol)
     {
