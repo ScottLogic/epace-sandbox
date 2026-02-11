@@ -1,5 +1,29 @@
 <div class="blockchain-page">
   <h1>Blockchain</h1>
   <h2>Trade Updates</h2>
-  <app-trade-update-list [trades]="trades" />
+
+  @if (connectionError) {
+    <div class="error-banner">
+      <span>{{ connectionError }}</span>
+      <button class="error-dismiss" (click)="dismissError()">&times;</button>
+    </div>
+  }
+
+  <app-symbol-selector
+    [activeSymbols]="activeSymbols"
+    (symbolSelected)="onSymbolSelected($event)"
+  />
+
+  <div class="subscriptions-area">
+    @for (sub of subscriptions; track sub.symbol) {
+      <app-subscription-container
+        [symbol]="sub.symbol"
+        [trades]="sub.trades"
+        [loading]="sub.loading"
+        (unsubscribed)="onUnsubscribe($event)"
+      />
+    } @empty {
+      <p class="empty-state">Select a symbol above to start streaming trades.</p>
+    }
+  </div>
 </div>
