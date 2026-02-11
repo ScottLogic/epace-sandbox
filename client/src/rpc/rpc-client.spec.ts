@@ -319,6 +319,91 @@ describe('RpcClient', () => {
     });
   });
 
+  describe('debug logging', () => {
+    let logger: (message?: unknown, ...optionalParams: unknown[]) => void;
+    let debugClient: RpcClient<TestMethods>;
+    let debugConnection: MockRpcConnection;
+
+    beforeEach(() => {
+      logger = vi.fn() as (message?: unknown, ...optionalParams: unknown[]) => void;
+      debugConnection = new MockRpcConnection();
+      debugClient = new RpcClient<TestMethods>(debugConnection, { timeout: 1000, debug: true, logger });
+    });
+
+    afterEach(() => {
+      debugClient.dispose();
+      debugConnection.dispose();
+    });
+
+    it('should log on connect', async () => {
+      await debugClient.connect();
+
+      expect(logger).toHaveBeenCalledWith('[RpcClient] connect()');
+    });
+
+    it('should log on connect failure', async () => {
+      debugConnection.shouldFailConnect = true;
+
+      await expect(debugClient.connect()).rejects.toThrow();
+      expect(logger).toHaveBeenCalledWith('[RpcClient] connect failed', expect.any(Error));
+    });
+
+    it('should log on disconnect', async () => {
+      await debugClient.connect();
+      await debugClient.disconnect();
+
+      expect(logger).toHaveBeenCalledWith('[RpcClient] disconnect()');
+    });
+
+    it('should log on invoke', async () => {
+      await debugClient.connect();
+      track(debugClient.invoke('ping'));
+      await tick();
+
+      expect(logger).toHaveBeenCalledWith('[RpcClient] invoke()', expect.objectContaining({ method: 'ping' }));
+    });
+
+    it('should log on response', async () => {
+      await debugClient.connect();
+      const resultPromise = firstValueFrom(debugClient.invoke('ping'));
+      await tick();
+
+      const sent = JSON.parse(debugConnection.sentMessages[0]);
+      debugConnection.simulateMessage(
+        JSON.stringify({ jsonrpc: '2.0', result: 'pong', id: sent.id }),
+      );
+
+      await resultPromise;
+      expect(logger).toHaveBeenCalledWith('[RpcClient] response', expect.objectContaining({ method: 'ping' }));
+    });
+
+    it('should log on dispose', () => {
+      debugClient.dispose();
+
+      expect(logger).toHaveBeenCalledWith('[RpcClient] dispose()');
+    });
+
+    it('should log raw messages', () => {
+      debugConnection.simulateMessage('{"jsonrpc":"2.0","method":"test","params":{}}');
+
+      expect(logger).toHaveBeenCalledWith('[RpcClient] raw message', expect.any(String));
+    });
+
+    it('should not log when debug is false', async () => {
+      const silentLogger = vi.fn() as (message?: unknown, ...optionalParams: unknown[]) => void;
+      const silentConn = new MockRpcConnection();
+      const silentClient = new RpcClient<TestMethods>(silentConn, { timeout: 1000, debug: false, logger: silentLogger });
+
+      await silentClient.connect();
+      track(silentClient.invoke('ping'));
+      await tick();
+      silentClient.dispose();
+      silentConn.dispose();
+
+      expect(silentLogger).not.toHaveBeenCalled();
+    });
+  });
+
   describe('malformed messages', () => {
     it('should ignore non-JSON messages', () => {
       expect(() => {

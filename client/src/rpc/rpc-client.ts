@@ -12,6 +12,8 @@ import { RpcConnection } from './rpc-connection';
 
 export interface RpcClientOptions {
   timeout?: number;
+  debug?: boolean;
+  logger?: (message?: unknown, ...optionalParams: unknown[]) => void;
 }
 
 const DEFAULT_TIMEOUT = 30000;
@@ -29,13 +31,18 @@ export class RpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefini
   private readonly notificationsSubject = new Subject<JsonRpcNotification>();
   private readonly timeoutMs: number;
   private subscription: Subscription | null = null;
+  private readonly debug: boolean;
+  private readonly log: (message?: unknown, ...optionalParams: unknown[]) => void;
 
   constructor(
     private readonly connection: RpcConnection,
     options?: RpcClientOptions,
   ) {
     this.timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT;
+    this.debug = !!options?.debug;
+    this.log = options?.logger ?? console.debug.bind(console);
     this.subscription = this.connection.messages$.subscribe((raw) => {
+      if (this.debug) this.log('[RpcClient] raw message', raw);
       this.handleMessage(raw);
     });
   }
@@ -45,14 +52,22 @@ export class RpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefini
   }
 
   async connect(): Promise<void> {
-    return this.connection.connect();
+    if (this.debug) this.log('[RpcClient] connect()');
+    return this.connection.connect().catch((err) => {
+      if (this.debug) this.log('[RpcClient] connect failed', err);
+      throw err;
+    });
   }
 
   async disconnect(): Promise<void> {
+    if (this.debug) this.log('[RpcClient] disconnect()');
     this.subscription?.unsubscribe();
     this.subscription = null;
     this.clearPendingRequests(new Error('Connection closed'));
-    return this.connection.disconnect();
+    return this.connection.disconnect().catch((err) => {
+      if (this.debug) this.log('[RpcClient] disconnect failed', err);
+      throw err;
+    });
   }
 
   invoke<M extends keyof TMethods & string>(
@@ -70,11 +85,13 @@ export class RpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefini
     };
 
     const responseSubject = new Subject<JsonRpcResponse>();
+    if (this.debug) this.log('[RpcClient] invoke()', { id, method, params });
     this.pendingRequests.set(id, responseSubject);
 
     const result$ = responseSubject.pipe(
       take(1),
       map((response) => {
+        if (this.debug) this.log('[RpcClient] response', { id, method, response });
         if (response.error) {
           throw new RpcClientError(response.error);
         }
@@ -84,6 +101,7 @@ export class RpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefini
         each: this.timeoutMs,
         with: () => {
           this.pendingRequests.delete(id);
+          if (this.debug) this.log('[RpcClient] timeout', { id, method, timeoutMs: this.timeoutMs });
           return throwError(
             () => new Error(`RPC request '${method}' timed out after ${this.timeoutMs}ms`),
           );
@@ -92,6 +110,7 @@ export class RpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefini
     );
 
     this.connection.send(JSON.stringify(request)).catch((err: unknown) => {
+      if (this.debug) this.log('[RpcClient] send failed', { id, method, err });
       responseSubject.error(err);
       this.pendingRequests.delete(id);
     });
@@ -107,6 +126,7 @@ export class RpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefini
   }
 
   dispose(): void {
+    if (this.debug) this.log('[RpcClient] dispose()');
     this.subscription?.unsubscribe();
     this.subscription = null;
     // Error active pending requests so awaiting callers see rejection; otherwise complete silently
