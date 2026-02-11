@@ -1,3 +1,3 @@
 export const environment = {
-  blockchainHubUrl: 'http://localhost:5000/blockchain',
+  blockchainHubUrl: 'https://localhost:7297/blockchain'
 };
