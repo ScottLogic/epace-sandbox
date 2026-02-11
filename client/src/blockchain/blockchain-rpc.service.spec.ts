@@ -4,12 +4,13 @@ import { RpcClient } from '../rpc';
 import { MockRpcConnection } from '../rpc/testing/mock-rpc-connection';
 import { RPC_CONNECTION } from '../rpc/rpc-client.service';
 import { ServiceError } from '../common/service-error';
+import { BlockchainMethods } from './models/blockchain-methods';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { TradeUpdate } from './models/trade-update';
 
 function createService() {
   const connection = new MockRpcConnection();
-  const client = new RpcClient(connection, { timeout: 1000 });
+  const client = new RpcClient<BlockchainMethods>(connection, { timeout: 1000 });
   const service = new BlockchainRpcService(client);
   return { connection, client, service };
 }
@@ -21,7 +22,7 @@ function tick(): Promise<void> {
 describe('BlockchainRpcService', () => {
   describe('unit tests', () => {
     let connection: MockRpcConnection;
-    let client: RpcClient;
+    let client: RpcClient<BlockchainMethods>;
     let service: BlockchainRpcService;
 
     beforeEach(() => {
@@ -268,7 +269,7 @@ describe('BlockchainRpcService', () => {
       TestBed.configureTestingModule({
         providers: [
           { provide: RPC_CONNECTION, useValue: mockConnection },
-          { provide: RpcClient, useFactory: () => new RpcClient(mockConnection, { timeout: 1000 }) },
+          { provide: RpcClient, useFactory: () => new RpcClient<BlockchainMethods>(mockConnection, { timeout: 1000 }) },
           BlockchainRpcService,
         ],
       });

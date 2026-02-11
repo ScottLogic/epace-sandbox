@@ -10,8 +10,8 @@ export class ServiceError extends Error {
   }
 }
 
-export function wrapServiceError(context: string) {
-  return catchError((err: unknown) => {
+export function wrapServiceError<T>(context: string) {
+  return catchError<T, never>((err: unknown) => {
     throw new ServiceError(context, err);
   });
 }
