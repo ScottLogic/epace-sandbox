@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { SymbolSelector } from './symbol-selector/symbol-selector';
@@ -29,7 +29,7 @@ export class Blockchain implements OnInit, OnDestroy {
 
   constructor(
     private readonly rpcService: BlockchainRpcService,
-    private readonly zone: NgZone,
+    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   get activeSymbols(): string[] {
@@ -38,12 +38,11 @@ export class Blockchain implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.stateSubscription = this.rpcService.connectionState$.subscribe((state) => {
-      this.zone.run(() => {
-        this.connectionState = state;
-        if (state === 'connected') {
-          this.connectionError = '';
-        }
-      });
+      this.connectionState = state;
+      if (state === 'connected') {
+        this.connectionError = '';
+      }
+      this.cdr.detectChanges();
     });
 
     this.rpcService
@@ -54,6 +53,7 @@ export class Blockchain implements OnInit, OnDestroy {
       .catch((err: unknown) => {
         this.connectionError =
           err instanceof Error ? err.message : 'Failed to connect to server';
+        this.cdr.detectChanges();
       });
   }
 
@@ -78,16 +78,14 @@ export class Blockchain implements OnInit, OnDestroy {
 
     this.rpcService.subscribe(symbol as Symbol).subscribe({
       next: () => {
-        this.zone.run(() => {
-          this.updateSubscription(symbol, { loading: false });
-        });
+        this.updateSubscription(symbol, { loading: false });
+        this.cdr.detectChanges();
       },
       error: (err: unknown) => {
-        this.zone.run(() => {
-          this.subscriptions = this.subscriptions.filter((s) => s.symbol !== symbol);
-          this.connectionError =
-            err instanceof Error ? err.message : `Failed to subscribe to ${symbol}`;
-        });
+        this.subscriptions = this.subscriptions.filter((s) => s.symbol !== symbol);
+        this.connectionError =
+          err instanceof Error ? err.message : `Failed to subscribe to ${symbol}`;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -103,13 +101,12 @@ export class Blockchain implements OnInit, OnDestroy {
 
   private listenForTrades(): void {
     this.tradeSubscription = this.rpcService.onTradeUpdate().subscribe((trade) => {
-      this.zone.run(() => {
-        this.subscriptions = this.subscriptions.map((s) =>
-          s.symbol === trade.symbol
-            ? { ...s, trades: [trade, ...s.trades], loading: false }
-            : s,
-        );
-      });
+      this.subscriptions = this.subscriptions.map((s) =>
+        s.symbol === trade.symbol
+          ? { ...s, trades: [trade, ...s.trades], loading: false }
+          : s,
+      );
+      this.cdr.detectChanges();
     });
   }
 
