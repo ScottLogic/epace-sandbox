@@ -1,0 +1,68 @@
+.subscription-container {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.subscription-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.subscription-symbol {
+  font-family: sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.unsubscribe-btn {
+  padding: 6px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f3f4f6;
+  color: #374151;
+  font-family: sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.unsubscribe-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.subscription-body {
+  overflow-x: auto;
+}
+
+.loading-area {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.loading-pulse {
+  width: 180px;
+  height: 52px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #d1d5db 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: pulse-slide 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-slide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
