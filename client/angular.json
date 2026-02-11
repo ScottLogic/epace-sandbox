@@ -19,6 +19,9 @@
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "define": {
+              "__BLOCKCHAIN_HUB_URL__": "'http://localhost:5000/blockchain'"
+            },
             "assets": [
               {
                 "glob": "**/*",

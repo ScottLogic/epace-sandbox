@@ -1,12 +1,11 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { Observable, Subscription, catchError, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { RpcClient, ConnectionState } from '../rpc';
+import { wrapServiceError } from '../common/service-error';
 import { Symbol, TradeUpdate } from './models/trade-update';
 
 @Injectable({ providedIn: 'root' })
 export class BlockchainRpcService implements OnDestroy {
-  private subscription: Subscription | null = null;
-
   constructor(private readonly rpcClient: RpcClient) {}
 
   get connectionState$(): Observable<ConnectionState> {
@@ -22,38 +21,24 @@ export class BlockchainRpcService implements OnDestroy {
   }
 
   subscribe(symbol: Symbol): Observable<unknown> {
-    return this.rpcClient.invoke('subscribe', { channel: 'trades', symbol }).pipe(
-      catchError((err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : 'Failed to subscribe to trade updates';
-        return throwError(() => new Error(message));
-      }),
-    );
+    return this.rpcClient
+      .invoke('subscribe', { channel: 'trades', symbol })
+      .pipe(wrapServiceError('BlockchainRpcService.subscribe() failed'));
   }
 
   unsubscribe(symbol: Symbol): Observable<unknown> {
-    return this.rpcClient.invoke('unsubscribe', { channel: 'trades', symbol }).pipe(
-      catchError((err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : 'Failed to unsubscribe from trade updates';
-        return throwError(() => new Error(message));
-      }),
-    );
+    return this.rpcClient
+      .invoke('unsubscribe', { channel: 'trades', symbol })
+      .pipe(wrapServiceError('BlockchainRpcService.unsubscribe() failed'));
   }
 
   onTradeUpdate(): Observable<TradeUpdate> {
-    return this.rpcClient.onNotification<TradeUpdate>('trades.update').pipe(
-      catchError((err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : 'Error receiving trade updates';
-        return throwError(() => new Error(message));
-      }),
-    );
+    return this.rpcClient
+      .onNotification<TradeUpdate>('trades.update')
+      .pipe(wrapServiceError('BlockchainRpcService.onTradeUpdate() failed')) as Observable<TradeUpdate>;
   }
 
   ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
-    this.subscription = null;
     this.rpcClient.dispose();
   }
 }

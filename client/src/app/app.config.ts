@@ -3,14 +3,15 @@ import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideRpcClient } from '../rpc';
-import { environment } from '../environments/environment';
+
+declare const __BLOCKCHAIN_HUB_URL__: string;
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideRpcClient({
-      hubUrl: environment.blockchainHubUrl,
+      hubUrl: __BLOCKCHAIN_HUB_URL__,
     }),
   ],
 };

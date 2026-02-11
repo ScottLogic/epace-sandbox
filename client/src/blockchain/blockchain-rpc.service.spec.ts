@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { RpcClient } from '../rpc';
 import { MockRpcConnection } from '../rpc/testing/mock-rpc-connection';
 import { RPC_CONNECTION } from '../rpc/rpc-client.service';
+import { ServiceError } from '../common/service-error';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { TradeUpdate } from './models/trade-update';
 
@@ -105,7 +106,7 @@ describe('BlockchainRpcService', () => {
         expect(result).toEqual({ event: 'subscribed' });
       });
 
-      it('should return a user-friendly error on failure', async () => {
+      it('should wrap RPC errors in a ServiceError with cause preserved', async () => {
         await service.connect();
 
         const resultPromise = firstValueFrom(service.subscribe('BTC-USD'));
@@ -120,7 +121,14 @@ describe('BlockchainRpcService', () => {
           }),
         );
 
-        await expect(resultPromise).rejects.toThrow('Invalid params');
+        try {
+          await resultPromise;
+          expect.unreachable('should have thrown');
+        } catch (err) {
+          expect(err).toBeInstanceOf(ServiceError);
+          expect((err as ServiceError).message).toBe('BlockchainRpcService.subscribe() failed');
+          expect((err as ServiceError).originalCause).toBeDefined();
+        }
       });
     });
 
@@ -154,7 +162,7 @@ describe('BlockchainRpcService', () => {
         expect(result).toEqual({ event: 'unsubscribed' });
       });
 
-      it('should return a user-friendly error on failure', async () => {
+      it('should wrap RPC errors in a ServiceError with cause preserved', async () => {
         await service.connect();
 
         const resultPromise = firstValueFrom(service.unsubscribe('BTC-USD'));
@@ -169,7 +177,14 @@ describe('BlockchainRpcService', () => {
           }),
         );
 
-        await expect(resultPromise).rejects.toThrow('Method not found');
+        try {
+          await resultPromise;
+          expect.unreachable('should have thrown');
+        } catch (err) {
+          expect(err).toBeInstanceOf(ServiceError);
+          expect((err as ServiceError).message).toBe('BlockchainRpcService.unsubscribe() failed');
+          expect((err as ServiceError).originalCause).toBeDefined();
+        }
       });
     });
 
