@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using DataServer.Api.Models.JsonRpc;
 using DataServer.Application.Services;
@@ -16,6 +17,9 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
         PropertyNameCaseInsensitive = true,
     };
 
+    private static readonly ConcurrentDictionary<string, HashSet<Symbol>> ConnectionSubscriptions =
+        new();
+
     public override async Task OnConnectedAsync()
     {
         logger.Information("SignalR client connected: {ConnectionId}", Context.ConnectionId);
@@ -29,6 +33,15 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
             Context.ConnectionId,
             exception?.Message
         );
+
+        if (ConnectionSubscriptions.TryRemove(Context.ConnectionId, out var symbols))
+        {
+            foreach (var symbol in symbols)
+            {
+                await blockchainDataService.UnsubscribeFromTradesAsync(symbol);
+            }
+        }
+
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -102,6 +115,16 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
             await Groups.AddToGroupAsync(Context.ConnectionId, GetTradesGroupName(symbol));
             await blockchainDataService.SubscribeToTradesAsync(symbol);
 
+            ConnectionSubscriptions.AddOrUpdate(
+                Context.ConnectionId,
+                _ => [symbol],
+                (_, existing) =>
+                {
+                    existing.Add(symbol);
+                    return existing;
+                }
+            );
+
             var result = new
             {
                 channel = "trades",
@@ -153,6 +176,11 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetTradesGroupName(symbol));
             await blockchainDataService.UnsubscribeFromTradesAsync(symbol);
+
+            if (ConnectionSubscriptions.TryGetValue(Context.ConnectionId, out var symbols))
+            {
+                symbols.Remove(symbol);
+            }
 
             var result = new
             {

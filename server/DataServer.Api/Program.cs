@@ -62,13 +62,15 @@ try
         builder.Configuration.GetSection(BlockchainSettings.SectionName)
     );
     builder.Services.Configure<BackoffOptions>(
-        builder.Configuration.GetSection(BackoffOptions.SectionName));
-    
+        builder.Configuration.GetSection(BackoffOptions.SectionName)
+    );
+
     builder.Services.AddSingleton<IBackoffStrategy, ExponentialBackoffStrategy>();
     builder.Services.AddSingleton<RetryConnector>();
     builder.Services.AddSingleton<IWebSocketClient, ResilientWebSocketClient>();
     builder.Services.AddSingleton<IBlockchainDataClient, BlockchainDataClient>();
     builder.Services.AddSingleton<IBlockchainDataRepository, InMemoryBlockchainDataRepository>();
+    builder.Services.AddSingleton<ISubscriptionManager, SubscriptionManager>();
     builder.Services.AddSingleton<IBlockchainDataService, BlockchainDataService>();
     builder.Services.AddHostedService<BlockchainHubService>();
     

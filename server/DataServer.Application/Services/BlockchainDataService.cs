@@ -7,6 +7,7 @@ public class BlockchainDataService : IBlockchainDataService
 {
     private readonly IBlockchainDataClient _dataClient;
     private readonly IBlockchainDataRepository _repository;
+    private readonly ISubscriptionManager _subscriptionManager;
     private EventHandler<TradeUpdate>? _tradeReceivedHandler;
     private EventHandler? _connectionLostHandler;
     private EventHandler? _connectionRestoredHandler;
@@ -17,11 +18,13 @@ public class BlockchainDataService : IBlockchainDataService
 
     public BlockchainDataService(
         IBlockchainDataClient dataClient,
-        IBlockchainDataRepository repository
+        IBlockchainDataRepository repository,
+        ISubscriptionManager subscriptionManager
     )
     {
         _dataClient = dataClient;
         _repository = repository;
+        _subscriptionManager = subscriptionManager;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -50,7 +53,10 @@ public class BlockchainDataService : IBlockchainDataService
         CancellationToken cancellationToken = default
     )
     {
-        await _dataClient.SubscribeToTradesAsync(symbol, cancellationToken);
+        if (_subscriptionManager.ShouldSubscribeDownstream(symbol))
+        {
+            await _dataClient.SubscribeToTradesAsync(symbol, cancellationToken);
+        }
     }
 
     public async Task UnsubscribeFromTradesAsync(
@@ -58,7 +64,10 @@ public class BlockchainDataService : IBlockchainDataService
         CancellationToken cancellationToken = default
     )
     {
-        await _dataClient.UnsubscribeFromTradesAsync(symbol, cancellationToken);
+        if (_subscriptionManager.ShouldUnsubscribeDownstream(symbol))
+        {
+            await _dataClient.UnsubscribeFromTradesAsync(symbol, cancellationToken);
+        }
     }
 
     public async Task<IReadOnlyList<TradeUpdate>> GetRecentTradesAsync(
