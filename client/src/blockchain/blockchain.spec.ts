@@ -1,12 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { Subject } from 'rxjs';
 import { Blockchain } from './blockchain';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { TradeUpdate } from './models/trade-update';
-import { ConnectionState } from '../rpc';
 import { MockRpcConnection } from '../rpc/testing/mock-rpc-connection';
 import { RpcClient } from '../rpc';
-import { BlockchainMethods, SubscribeResult } from './models/blockchain-methods';
+import { BlockchainMethods } from './models/blockchain-methods';
 import { RPC_CONNECTION } from '../rpc/rpc-client.service';
 
 function tick(): Promise<void> {
