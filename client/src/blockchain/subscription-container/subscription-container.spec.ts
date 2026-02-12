@@ -126,7 +126,7 @@ describe('SubscriptionContainer', () => {
       expect(host.resubscribedSymbol).toBe('BTC-USD');
     });
 
-    it('should emit dismissed event when Dismiss is clicked', () => {
+    it.only('should emit dismissed event when Dismiss is clicked', () => {
       host.state = 'paused';
       fixture.detectChanges();
 

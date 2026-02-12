@@ -1,6 +1,14 @@
 <div class="blockchain-page">
-  <h1>Blockchain</h1>
-  <h2>Trade Updates</h2>
+  <div class="page-header">
+    <div>
+      <h1>Blockchain</h1>
+      <h2>Trade Updates</h2>
+    </div>
+    <app-connection-status
+      [signalRState]="connectionState"
+      [backendConnected]="backendConnected"
+    />
+  </div>
 
   @if (connectionError) {
     <div class="error-banner">

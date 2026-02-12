@@ -6,6 +6,10 @@ export class ServiceError extends Error {
     this.name = 'ServiceError';
     this.cause = cause;
   }
+
+  get originalCause(): unknown {
+    return this.cause;
+  }
 }
 
 export function wrapServiceError<T>(context: string) {
