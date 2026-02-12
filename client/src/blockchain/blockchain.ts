@@ -77,10 +77,7 @@ export class Blockchain implements OnInit, OnDestroy {
     this.subscriptions = [...this.subscriptions, entry];
 
     this.rpcService.subscribe(symbol as Symbol).subscribe({
-      next: () => {
-        this.updateSubscription(symbol, { loading: false });
-        this.cdr.detectChanges();
-      },
+      next: () => {},
       error: (err: unknown) => {
         this.subscriptions = this.subscriptions.filter((s) => s.symbol !== symbol);
         this.connectionError =
