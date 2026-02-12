@@ -32,6 +32,22 @@ try
     {
         options.AddFilter<HubExceptionFilter>();
     });
+    
+    var allowSpecificOrigins = "_allowSpecificOrigins";
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(name: allowSpecificOrigins,
+            policy =>
+            {
+                policy
+                    .WithOrigins("http://localhost:4200")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            }
+        );
+    });
     builder.Services.AddSerilog(
         (services, lc) =>
             lc
@@ -60,6 +76,7 @@ try
     
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
     app.UseSerilogRequestLogging();
+    app.UseCors(allowSpecificOrigins);
     app.MapHub<BlockchainHub>("/blockchain");
     app.Run();
 }
