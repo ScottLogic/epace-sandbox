@@ -3,11 +3,13 @@ import { RpcClient, RpcClientOptions } from './rpc-client';
 import { SignalRConnectionOptions, SignalRRpcConnection } from './signalr-rpc-connection';
 import { RpcMethodDefinition, RpcMethodMap } from './models';
 import { RpcConnection } from './rpc-connection';
+import { Logger } from '../common/logger';
 
 export interface RpcClientConfig {
   hubUrl: string;
   connectionOptions?: SignalRConnectionOptions;
   clientOptions?: RpcClientOptions;
+  debug?: boolean;
 }
 
 export const RPC_CONNECTION = new InjectionToken<RpcConnection>('RPC_CONNECTION');
@@ -15,9 +17,10 @@ export const RPC_CONNECTION = new InjectionToken<RpcConnection>('RPC_CONNECTION'
 export function provideRpcClient<TMethods extends { [K in keyof TMethods]: RpcMethodDefinition } = RpcMethodMap>(
   config: RpcClientConfig,
 ): Provider[] {
-  const debug = config.clientOptions?.debug ?? isDevMode();
-  const connectionOpts: SignalRConnectionOptions = { ...config.connectionOptions, debug };
-  const clientOpts: RpcClientOptions = { ...config.clientOptions, debug };
+  const debug = config.debug ?? isDevMode();
+  const logger = config.clientOptions?.logger ?? config.connectionOptions?.logger ?? new Logger({ enabled: debug });
+  const connectionOpts: SignalRConnectionOptions = { ...config.connectionOptions, logger };
+  const clientOpts: RpcClientOptions = { ...config.clientOptions, logger };
 
   return [
     {
