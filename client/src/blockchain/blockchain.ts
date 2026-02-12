@@ -64,7 +64,7 @@ export class Blockchain implements OnInit, OnDestroy {
     this.tradeSubscription?.unsubscribe();
     this.stateSubscription?.unsubscribe();
 
-    for (const sub of this.subscriptions) {
+    for (const sub of this.subscriptions.filter((s) => s.state === 'active')) {
       this.rpcService.unsubscribe(sub.symbol as Symbol).subscribe();
     }
 
@@ -72,7 +72,11 @@ export class Blockchain implements OnInit, OnDestroy {
   }
 
   onSymbolSelected(symbol: string): void {
-    if (this.subscriptions.some((s) => s.symbol === symbol)) {
+    const existing = this.subscriptions.find((s) => s.symbol === symbol);
+    if (existing) {
+      if (existing.state === 'paused') {
+        this.onResubscribe(symbol);
+      }
       return;
     }
 

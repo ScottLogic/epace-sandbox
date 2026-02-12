@@ -74,6 +74,19 @@ describe('Blockchain', () => {
 
       expect(component.subscriptions).toHaveLength(1);
     });
+
+    it('should resubscribe a paused subscription when selected again', () => {
+      component.onSymbolSelected('BTC-USD');
+      component.onUnsubscribe('BTC-USD');
+
+      expect(component.subscriptions[0].state).toBe('paused');
+
+      component.onSymbolSelected('BTC-USD');
+
+      expect(component.subscriptions).toHaveLength(1);
+      expect(component.subscriptions[0].state).toBe('active');
+      expect(mockRpcService.subscribe).toHaveBeenCalledWith('BTC-USD');
+    });
   });
 
   describe('activeSymbols', () => {
