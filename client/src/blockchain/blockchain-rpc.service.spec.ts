@@ -5,7 +5,7 @@ import { MockRpcConnection } from '../rpc/testing/mock-rpc-connection';
 import { RPC_CONNECTION } from '../rpc/rpc-client.service';
 import { ServiceError } from '../common/service-error';
 import { BlockchainMethods } from './models/blockchain-methods';
-import { BlockchainRpcService } from './blockchain-rpc.service';
+import { BlockchainRpcService, BackendConnectionEvent } from './blockchain-rpc.service';
 import { TradeUpdate } from './models/trade-update';
 
 function createService() {
@@ -250,6 +250,71 @@ describe('BlockchainRpcService', () => {
 
         expect(received1).toHaveLength(1);
         expect(received2).toHaveLength(1);
+      });
+    });
+
+    describe('onBackendConnectionEvent', () => {
+      it('should emit lost when connection.lost notification is received', () => {
+        const events: BackendConnectionEvent[] = [];
+        service.onBackendConnectionEvent().subscribe((e) => events.push(e));
+
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', method: 'connection.lost', params: {} }),
+        );
+
+        expect(events).toHaveLength(1);
+        expect(events[0]).toBe('lost');
+      });
+
+      it('should emit restored when connection.restored notification is received', () => {
+        const events: BackendConnectionEvent[] = [];
+        service.onBackendConnectionEvent().subscribe((e) => events.push(e));
+
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', method: 'connection.restored', params: {} }),
+        );
+
+        expect(events).toHaveLength(1);
+        expect(events[0]).toBe('restored');
+      });
+
+      it('should emit both lost and restored events in sequence', () => {
+        const events: BackendConnectionEvent[] = [];
+        service.onBackendConnectionEvent().subscribe((e) => events.push(e));
+
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', method: 'connection.lost', params: {} }),
+        );
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', method: 'connection.restored', params: {} }),
+        );
+
+        expect(events).toEqual(['lost', 'restored']);
+      });
+
+      it('should not emit for unrelated notifications', () => {
+        const events: BackendConnectionEvent[] = [];
+        service.onBackendConnectionEvent().subscribe((e) => events.push(e));
+
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', method: 'trades.update', params: {} }),
+        );
+
+        expect(events).toHaveLength(0);
+      });
+
+      it('should support multiple subscribers', () => {
+        const events1: BackendConnectionEvent[] = [];
+        const events2: BackendConnectionEvent[] = [];
+        service.onBackendConnectionEvent().subscribe((e) => events1.push(e));
+        service.onBackendConnectionEvent().subscribe((e) => events2.push(e));
+
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', method: 'connection.lost', params: {} }),
+        );
+
+        expect(events1).toHaveLength(1);
+        expect(events2).toHaveLength(1);
       });
     });
 
