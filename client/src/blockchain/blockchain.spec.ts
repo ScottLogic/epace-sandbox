@@ -44,7 +44,7 @@ function createTrade(symbol: 'BTC-USD' | 'ETH-USD', overrides?: Partial<TradeUpd
   };
 }
 
-describe.skip('Blockchain', () => {
+describe('Blockchain', () => {
   let component: Blockchain;
   let mockRpcService: ReturnType<typeof createMockRpcService>;
 
