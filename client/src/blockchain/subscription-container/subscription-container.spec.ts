@@ -50,10 +50,10 @@ describe('SubscriptionContainer', () => {
 
     fixture = TestBed.createComponent(TestHost);
     host = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create the component', () => {
+    fixture.detectChanges();
     const container = fixture.nativeElement.querySelector('.subscription-container');
     expect(container).toBeTruthy();
   });
@@ -138,6 +138,7 @@ describe('SubscriptionContainer', () => {
   });
 
   it('should display the symbol name', () => {
+    fixture.detectChanges();
     const symbolEl = fixture.nativeElement.querySelector('.subscription-symbol');
     expect(symbolEl.textContent.trim()).toBe('BTC-USD');
   });
