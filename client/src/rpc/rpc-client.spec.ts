@@ -2,6 +2,7 @@ import { firstValueFrom } from 'rxjs';
 import { RpcClient, RpcClientError } from './rpc-client';
 import { MockRpcConnection } from './testing/mock-rpc-connection';
 import { JSON_RPC_VERSION, RpcMethodDefinition } from './models';
+import { Logger, LogFunction } from '../common/logger';
 
 interface TestMethods {
   subscribe: RpcMethodDefinition<{ channel: string; symbol: string }, { event: string }>;
@@ -320,14 +321,14 @@ describe('RpcClient', () => {
   });
 
   describe('debug logging', () => {
-    let logger: (message?: unknown, ...optionalParams: unknown[]) => void;
+    let logFn: LogFunction;
     let debugClient: RpcClient<TestMethods>;
     let debugConnection: MockRpcConnection;
 
     beforeEach(() => {
-      logger = vi.fn() as (message?: unknown, ...optionalParams: unknown[]) => void;
+      logFn = vi.fn() as LogFunction;
       debugConnection = new MockRpcConnection();
-      debugClient = new RpcClient<TestMethods>(debugConnection, { timeout: 1000, debug: true, logger });
+      debugClient = new RpcClient<TestMethods>(debugConnection, { timeout: 1000, logger: new Logger({ enabled: true, logFn }) });
     });
 
     afterEach(() => {
@@ -338,21 +339,21 @@ describe('RpcClient', () => {
     it('should log on connect', async () => {
       await debugClient.connect();
 
-      expect(logger).toHaveBeenCalledWith('[RpcClient] connect()');
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] connect()');
     });
 
     it('should log on connect failure', async () => {
       debugConnection.shouldFailConnect = true;
 
       await expect(debugClient.connect()).rejects.toThrow();
-      expect(logger).toHaveBeenCalledWith('[RpcClient] connect failed', expect.any(Error));
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] connect failed', expect.any(Error));
     });
 
     it('should log on disconnect', async () => {
       await debugClient.connect();
       await debugClient.disconnect();
 
-      expect(logger).toHaveBeenCalledWith('[RpcClient] disconnect()');
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] disconnect()');
     });
 
     it('should log on invoke', async () => {
@@ -360,7 +361,7 @@ describe('RpcClient', () => {
       track(debugClient.invoke('ping'));
       await tick();
 
-      expect(logger).toHaveBeenCalledWith('[RpcClient] invoke()', expect.objectContaining({ method: 'ping' }));
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] invoke()', expect.objectContaining({ method: 'ping' }));
     });
 
     it('should log on response', async () => {
@@ -374,25 +375,25 @@ describe('RpcClient', () => {
       );
 
       await resultPromise;
-      expect(logger).toHaveBeenCalledWith('[RpcClient] response', expect.objectContaining({ method: 'ping' }));
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] response', expect.objectContaining({ method: 'ping' }));
     });
 
     it('should log on dispose', () => {
       debugClient.dispose();
 
-      expect(logger).toHaveBeenCalledWith('[RpcClient] dispose()');
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] dispose()');
     });
 
     it('should log raw messages', () => {
       debugConnection.simulateMessage('{"jsonrpc":"2.0","method":"test","params":{}}');
 
-      expect(logger).toHaveBeenCalledWith('[RpcClient] raw message', expect.any(String));
+      expect(logFn).toHaveBeenCalledWith('[RpcClient] raw message', expect.any(String));
     });
 
-    it('should not log when debug is false', async () => {
-      const silentLogger = vi.fn() as (message?: unknown, ...optionalParams: unknown[]) => void;
+    it('should not log when logger is disabled', async () => {
+      const silentLogFn = vi.fn() as LogFunction;
       const silentConn = new MockRpcConnection();
-      const silentClient = new RpcClient<TestMethods>(silentConn, { timeout: 1000, debug: false, logger: silentLogger });
+      const silentClient = new RpcClient<TestMethods>(silentConn, { timeout: 1000, logger: new Logger({ enabled: false, logFn: silentLogFn }) });
 
       await silentClient.connect();
       track(silentClient.invoke('ping'));
@@ -400,7 +401,7 @@ describe('RpcClient', () => {
       silentClient.dispose();
       silentConn.dispose();
 
-      expect(silentLogger).not.toHaveBeenCalled();
+      expect(silentLogFn).not.toHaveBeenCalled();
     });
   });
 

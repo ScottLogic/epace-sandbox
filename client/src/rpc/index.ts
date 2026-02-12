@@ -33,3 +33,5 @@ export {
   provideRpcClient,
   createRpcClient,
 } from './rpc-client.service';
+
+export { Logger, SILENT_LOGGER, type LogFunction, type LoggerOptions } from '../common/logger';
