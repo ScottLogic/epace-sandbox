@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { SymbolSelector } from './symbol-selector/symbol-selector';
 import { SubscriptionContainer } from './subscription-container/subscription-container';
+import { ConnectionStatus } from './connection-status/connection-status';
 import { TradeUpdate, Symbol } from './models/trade-update';
 import { ConnectionState } from '../rpc';
 
@@ -14,7 +15,7 @@ interface SymbolSubscription {
 
 @Component({
   selector: 'app-blockchain',
-  imports: [SymbolSelector, SubscriptionContainer],
+  imports: [SymbolSelector, SubscriptionContainer, ConnectionStatus],
   templateUrl: './blockchain.html',
   styleUrl: './blockchain.css',
 })
@@ -23,9 +24,11 @@ export class Blockchain implements OnInit, OnDestroy {
   subscriptions: SymbolSubscription[] = [];
   connectionError = '';
   connectionState: ConnectionState = 'disconnected';
+  backendConnected = true;
 
   private tradeSubscription: Subscription | null = null;
   private stateSubscription: Subscription | null = null;
+  private backendConnectionSubscription: Subscription | null = null;
 
   constructor(
     private readonly rpcService: BlockchainRpcService,
@@ -49,6 +52,7 @@ export class Blockchain implements OnInit, OnDestroy {
       .connect()
       .then(() => {
         this.listenForTrades();
+        this.listenForBackendConnection();
       })
       .catch((err: unknown) => {
         this.connectionError =
@@ -60,6 +64,7 @@ export class Blockchain implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.tradeSubscription?.unsubscribe();
     this.stateSubscription?.unsubscribe();
+    this.backendConnectionSubscription?.unsubscribe();
 
     for (const sub of this.subscriptions) {
       this.rpcService.unsubscribe(sub.symbol as Symbol).subscribe();
@@ -108,6 +113,15 @@ export class Blockchain implements OnInit, OnDestroy {
       );
       this.cdr.detectChanges();
     });
+  }
+
+  private listenForBackendConnection(): void {
+    this.backendConnectionSubscription = this.rpcService
+      .onBackendConnectionEvent()
+      .subscribe((event) => {
+        this.backendConnected = event === 'restored';
+        this.cdr.detectChanges();
+      });
   }
 
   private updateSubscription(
