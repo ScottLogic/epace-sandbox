@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { SymbolSelector } from './symbol-selector/symbol-selector';
 import { SubscriptionContainer } from './subscription-container/subscription-container';
+import { ViewMode } from './subscription-container/subscription-container';
 import { ConnectionStatus } from './connection-status/connection-status';
 import { TradeUpdate, Symbol } from './models/trade-update';
 import { ConnectionState } from '../rpc';
@@ -14,6 +15,7 @@ interface SymbolSubscription {
   trades: TradeUpdate[];
   loading: boolean;
   state: SubscriptionState;
+  historicalLoaded: boolean;
 }
 
 @Component({
@@ -85,7 +87,13 @@ export class Blockchain implements OnInit, OnDestroy {
       return;
     }
 
-    const entry: SymbolSubscription = { symbol, trades: [], loading: true, state: 'active' };
+    const entry: SymbolSubscription = {
+      symbol,
+      trades: [],
+      loading: true,
+      state: 'active',
+      historicalLoaded: false,
+    };
     this.subscriptions = [...this.subscriptions, entry];
 
     this.rpcService.subscribe(symbol as Symbol).subscribe({
@@ -124,17 +132,61 @@ export class Blockchain implements OnInit, OnDestroy {
     this.subscriptions = this.subscriptions.filter((s) => s.symbol !== symbol);
   }
 
+  onViewModeChanged(symbol: string, mode: ViewMode): void {
+    if (mode !== 'table') {
+      return;
+    }
+
+    const sub = this.subscriptions.find((s) => s.symbol === symbol);
+    if (!sub || sub.historicalLoaded) {
+      return;
+    }
+
+    this.fetchRecentTrades(symbol);
+  }
+
   dismissError(): void {
     this.connectionError = '';
   }
 
+  private fetchRecentTrades(symbol: string): void {
+    this.rpcService.getRecentTrades(symbol as Symbol, 50).subscribe({
+      next: (historicalTrades) => {
+        this.updateSubscription(symbol, {
+          trades: this.deduplicateTrades(symbol, historicalTrades),
+          loading: false,
+          historicalLoaded: true,
+        });
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.updateSubscription(symbol, { historicalLoaded: false });
+      },
+    });
+  }
+
+  private deduplicateTrades(symbol: string, historicalTrades: TradeUpdate[]): TradeUpdate[] {
+    const sub = this.subscriptions.find((s) => s.symbol === symbol);
+    if (!sub) {
+      return historicalTrades;
+    }
+
+    const existingIds = new Set(sub.trades.map((t) => t.tradeId));
+    const newHistorical = historicalTrades.filter((t) => !existingIds.has(t.tradeId));
+    return [...sub.trades, ...newHistorical];
+  }
+
   private listenForTrades(): void {
     this.tradeSubscription = this.rpcService.onTradeUpdate().subscribe((trade) => {
-      this.subscriptions = this.subscriptions.map((s) =>
-        s.symbol === trade.symbol && s.state === 'active'
-          ? { ...s, trades: [trade, ...s.trades], loading: false }
-          : s,
-      );
+      this.subscriptions = this.subscriptions.map((s) => {
+        if (s.symbol !== trade.symbol || s.state !== 'active') {
+          return s;
+        }
+        if (s.trades.some((t) => t.tradeId === trade.tradeId)) {
+          return { ...s, loading: false };
+        }
+        return { ...s, trades: [trade, ...s.trades], loading: false };
+      });
       this.cdr.detectChanges();
     });
   }

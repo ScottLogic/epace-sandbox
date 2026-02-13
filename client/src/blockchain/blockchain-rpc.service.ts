@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { RpcClient, ConnectionState } from '../rpc';
 import { wrapServiceError } from '../common/service-error';
-import { BlockchainMethods, SubscribeResult } from './models/blockchain-methods';
+import { BlockchainMethods, SubscribeResult, GetRecentTradesParams } from './models/blockchain-methods';
 import { Symbol, TradeUpdate } from './models/trade-update';
 
 export type BackendConnectionEvent = 'lost' | 'restored';
@@ -33,6 +33,12 @@ export class BlockchainRpcService implements OnDestroy {
     return this.rpcClient
       .invoke('unsubscribe', { channel: 'trades', symbol })
       .pipe(wrapServiceError<SubscribeResult>('BlockchainRpcService.unsubscribe() failed'));
+  }
+
+  getRecentTrades(symbol: Symbol, count: number = 50): Observable<TradeUpdate[]> {
+    return this.rpcClient
+      .invoke('getRecentTrades', { channel: 'trades', symbol, count })
+      .pipe(wrapServiceError<TradeUpdate[]>('BlockchainRpcService.getRecentTrades() failed'));
   }
 
   onTradeUpdate(): Observable<TradeUpdate> {

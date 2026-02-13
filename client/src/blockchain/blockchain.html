@@ -32,6 +32,7 @@
         (unsubscribed)="onUnsubscribe($event)"
         (resubscribed)="onResubscribe($event)"
         (dismissed)="onDismiss($event)"
+        (viewModeChanged)="onViewModeChanged(sub.symbol, $event)"
       />
     } @empty {
       <p class="empty-state">Select a symbol above to start streaming trades.</p>

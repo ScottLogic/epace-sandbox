@@ -318,6 +318,89 @@ describe('BlockchainRpcService', () => {
       });
     });
 
+    describe('getRecentTrades', () => {
+      it('should send a getRecentTrades RPC request with correct params', async () => {
+        await service.connect();
+
+        const sub = service.getRecentTrades('BTC-USD', 50).subscribe({ error: () => {} });
+        await tick();
+
+        expect(connection.sentMessages).toHaveLength(1);
+        const sent = JSON.parse(connection.sentMessages[0]);
+        expect(sent.method).toBe('getRecentTrades');
+        expect(sent.params).toEqual({ channel: 'trades', symbol: 'BTC-USD', count: 50 });
+
+        sub.unsubscribe();
+      });
+
+      it('should resolve with an array of trades on success', async () => {
+        await service.connect();
+
+        const trades: TradeUpdate[] = [
+          {
+            seqnum: 1,
+            event: 'updated',
+            channel: 'trades',
+            symbol: 'BTC-USD',
+            timestamp: '2026-01-01T00:00:00Z',
+            side: 'buy',
+            qty: 0.5,
+            price: 50000,
+            tradeId: 'trade-1',
+          },
+        ];
+
+        const resultPromise = firstValueFrom(service.getRecentTrades('BTC-USD', 50));
+        await tick();
+
+        const sent = JSON.parse(connection.sentMessages[0]);
+        connection.simulateMessage(
+          JSON.stringify({ jsonrpc: '2.0', result: trades, id: sent.id }),
+        );
+
+        const result = await resultPromise;
+        expect(result).toEqual(trades);
+      });
+
+      it('should use default count of 50', async () => {
+        await service.connect();
+
+        const sub = service.getRecentTrades('ETH-USD').subscribe({ error: () => {} });
+        await tick();
+
+        const sent = JSON.parse(connection.sentMessages[0]);
+        expect(sent.params.count).toBe(50);
+
+        sub.unsubscribe();
+      });
+
+      it('should wrap RPC errors in a ServiceError', async () => {
+        await service.connect();
+
+        const resultPromise = firstValueFrom(service.getRecentTrades('BTC-USD', 50));
+        await tick();
+
+        const sent = JSON.parse(connection.sentMessages[0]);
+        connection.simulateMessage(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: -32602, message: 'Invalid params' },
+            id: sent.id,
+          }),
+        );
+
+        try {
+          await resultPromise;
+          expect.unreachable('should have thrown');
+        } catch (err) {
+          expect(err).toBeInstanceOf(ServiceError);
+          expect((err as ServiceError).message).toBe(
+            'BlockchainRpcService.getRecentTrades() failed',
+          );
+        }
+      });
+    });
+
     describe('ngOnDestroy', () => {
       it('should dispose the RPC client', () => {
         const disposeSpy = vi.spyOn(client, 'dispose');

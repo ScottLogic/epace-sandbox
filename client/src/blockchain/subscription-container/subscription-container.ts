@@ -19,10 +19,12 @@ export class SubscriptionContainer {
   unsubscribed = output<string>();
   resubscribed = output<string>();
   dismissed = output<string>();
+  viewModeChanged = output<ViewMode>();
   viewMode: ViewMode = 'card';
 
   toggleViewMode(): void {
     this.viewMode = this.viewMode === 'card' ? 'table' : 'card';
+    this.viewModeChanged.emit(this.viewMode);
   }
 
   onUnsubscribe(): void {
