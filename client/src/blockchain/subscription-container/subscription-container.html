@@ -1,12 +1,17 @@
 <div class="subscription-container" [class.paused]="state() === 'paused'">
   <div class="subscription-header">
     <span class="subscription-symbol">{{ symbol() }}</span>
-    @if (state() === 'active') {
-      <button class="unsubscribe-btn" (click)="onUnsubscribe()">Unsubscribe</button>
-    } @else {
-      <button class="resubscribe-btn" (click)="onResubscribe()">Resubscribe</button>
-      <button class="dismiss-btn" (click)="onDismiss()">Dismiss</button>
-    }
+    <div class="header-actions">
+      <button class="view-toggle-btn" (click)="toggleViewMode()">
+        {{ viewMode === 'card' ? 'Table View' : 'Card View' }}
+      </button>
+      @if (state() === 'active') {
+        <button class="unsubscribe-btn" (click)="onUnsubscribe()">Unsubscribe</button>
+      } @else {
+        <button class="resubscribe-btn" (click)="onResubscribe()">Resubscribe</button>
+        <button class="dismiss-btn" (click)="onDismiss()">Dismiss</button>
+      }
+    </div>
   </div>
   <div class="subscription-body">
     @if (loading()) {
@@ -16,7 +21,11 @@
         <div class="loading-pulse"></div>
       </div>
     } @else {
-      <app-trade-update-list [trades]="trades()" />
+      @if (viewMode === 'card') {
+        <app-trade-update-list [trades]="trades()" />
+      } @else {
+        <app-trade-update-table [trades]="trades()" />
+      }
     }
   </div>
 </div>
