@@ -1,5 +1,14 @@
 .table-wrapper {
+  max-height: 400px;
   overflow-x: auto;
+  overflow-y: auto;
+}
+
+.trade-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fafafa;
 }
 
 .trade-table {
