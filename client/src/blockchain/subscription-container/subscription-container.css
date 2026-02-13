@@ -9,8 +9,33 @@
 .subscription-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-toggle-btn {
+  padding: 6px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  color: #374151;
+  font-family: sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.view-toggle-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .subscription-symbol {

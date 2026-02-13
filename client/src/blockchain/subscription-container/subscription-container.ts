@@ -1,10 +1,13 @@
 import { Component, input, output } from '@angular/core';
 import { TradeUpdate } from '../models/trade-update';
 import { TradeUpdateList } from '../trade-update-list/trade-update-list';
+import { TradeUpdateTable } from '../trade-update-table/trade-update-table';
+
+export type ViewMode = 'card' | 'table';
 
 @Component({
   selector: 'app-subscription-container',
-  imports: [TradeUpdateList],
+  imports: [TradeUpdateList, TradeUpdateTable],
   templateUrl: './subscription-container.html',
   styleUrl: './subscription-container.css',
 })
@@ -16,6 +19,11 @@ export class SubscriptionContainer {
   unsubscribed = output<string>();
   resubscribed = output<string>();
   dismissed = output<string>();
+  viewMode: ViewMode = 'card';
+
+  toggleViewMode(): void {
+    this.viewMode = this.viewMode === 'card' ? 'table' : 'card';
+  }
 
   onUnsubscribe(): void {
     this.unsubscribed.emit(this.symbol());
