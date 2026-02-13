@@ -10,5 +10,11 @@ public interface IBlockchainDataRepository
         int count = 100,
         CancellationToken cancellationToken = default
     );
+    Task<IReadOnlyList<TradeUpdate>> GetRecentTradesAsync(
+        Symbol symbol,
+        int count,
+        DateTimeOffset beforeTimestamp,
+        CancellationToken cancellationToken = default
+    );
     Task ClearTradesAsync(Symbol symbol, CancellationToken cancellationToken = default);
 }

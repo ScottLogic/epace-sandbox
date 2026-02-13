@@ -220,6 +220,39 @@ public class BlockchainDataServiceTests
     }
 
     [Fact]
+    public async Task GetRecentTradesAsync_WithBeforeTimestamp_CallsRepositoryWithCorrectParameters()
+    {
+        const Symbol symbol = Symbol.BtcUsd;
+        const int count = 25;
+        var beforeTimestamp = DateTimeOffset.UtcNow;
+        var expectedTrades = new List<TradeUpdate> { CreateTestTrade(symbol) };
+        _mockRepository
+            .Setup(repo =>
+                repo.GetRecentTradesAsync(
+                    symbol,
+                    count,
+                    beforeTimestamp,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(expectedTrades);
+
+        var result = await _service.GetRecentTradesAsync(symbol, count, beforeTimestamp);
+
+        _mockRepository.Verify(
+            repo =>
+                repo.GetRecentTradesAsync(
+                    symbol,
+                    count,
+                    beforeTimestamp,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        Assert.Equal(expectedTrades, result);
+    }
+
+    [Fact]
     public async Task AfterStopAsync_TradeReceivedEventDoesNotCallRepository()
     {
         var tradeBeforeStop = CreateTestTrade(Symbol.BtcUsd, "trade-before-stop");

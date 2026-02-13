@@ -79,6 +79,21 @@ public class BlockchainDataService : IBlockchainDataService
         return await _repository.GetRecentTradesAsync(symbol, count, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<TradeUpdate>> GetRecentTradesAsync(
+        Symbol symbol,
+        int count,
+        DateTimeOffset beforeTimestamp,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await _repository.GetRecentTradesAsync(
+            symbol,
+            count,
+            beforeTimestamp,
+            cancellationToken
+        );
+    }
+
     private async Task OnTradeReceivedAsync(TradeUpdate trade)
     {
         await _repository.AddTradeAsync(trade);
