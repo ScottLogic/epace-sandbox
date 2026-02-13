@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { RpcClient, ConnectionState } from '../rpc';
 import { wrapServiceError } from '../common/service-error';
-import { BlockchainMethods, SubscribeResult, GetRecentTradesParams } from './models/blockchain-methods';
+import { BlockchainMethods, SubscribeResult } from './models/blockchain-methods';
 import { Symbol, TradeUpdate } from './models/trade-update';
 
 export type BackendConnectionEvent = 'lost' | 'restored';
