@@ -15,6 +15,12 @@ public interface IBlockchainDataService
         int count = 100,
         CancellationToken cancellationToken = default
     );
+    Task<IReadOnlyList<TradeUpdate>> GetRecentTradesAsync(
+        Symbol symbol,
+        int count,
+        DateTimeOffset beforeTimestamp,
+        CancellationToken cancellationToken = default
+    );
 
     event EventHandler<TradeUpdate>? TradeReceived;
     event EventHandler? ConnectionLost;

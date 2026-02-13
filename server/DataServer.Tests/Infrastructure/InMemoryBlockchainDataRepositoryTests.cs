@@ -182,4 +182,51 @@ public class InMemoryBlockchainDataRepositoryTests : IDisposable
         var trades = await _repository.GetRecentTradesAsync(Symbol.BtcUsd, 10);
         Assert.Single(trades);
     }
+
+    [Fact]
+    public async Task GetRecentTradesAsync_WithBeforeTimestamp_FiltersTradesOlderThanTimestamp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var trade1 = CreateTestTrade(Symbol.BtcUsd, "trade-1", now.AddMinutes(-3));
+        var trade2 = CreateTestTrade(Symbol.BtcUsd, "trade-2", now.AddMinutes(-2));
+        var trade3 = CreateTestTrade(Symbol.BtcUsd, "trade-3", now.AddMinutes(-1));
+
+        await _repository.AddTradeAsync(trade1);
+        await _repository.AddTradeAsync(trade2);
+        await _repository.AddTradeAsync(trade3);
+
+        var trades = await _repository.GetRecentTradesAsync(Symbol.BtcUsd, 10, now.AddMinutes(-1));
+
+        Assert.Equal(2, trades.Count);
+        Assert.Equal("trade-2", trades[0].TradeId);
+        Assert.Equal("trade-1", trades[1].TradeId);
+    }
+
+    [Fact]
+    public async Task GetRecentTradesAsync_WithBeforeTimestamp_ReturnsEmptyForSymbolWithNoTrades()
+    {
+        var trades = await _repository.GetRecentTradesAsync(
+            Symbol.BtcUsd,
+            10,
+            DateTimeOffset.UtcNow
+        );
+
+        Assert.Empty(trades);
+    }
+
+    [Fact]
+    public async Task GetRecentTradesAsync_WithBeforeTimestamp_LimitsResultsToRequestedCount()
+    {
+        var now = DateTimeOffset.UtcNow;
+        for (int i = 0; i < 10; i++)
+        {
+            await _repository.AddTradeAsync(
+                CreateTestTrade(Symbol.BtcUsd, $"trade-{i}", now.AddMinutes(-10 + i))
+            );
+        }
+
+        var trades = await _repository.GetRecentTradesAsync(Symbol.BtcUsd, 3, now);
+
+        Assert.Equal(3, trades.Count);
+    }
 }

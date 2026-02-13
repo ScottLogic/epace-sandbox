@@ -16,5 +16,7 @@ public record JsonRpcRequest(
 
 public record JsonRpcParams(
     [property: JsonPropertyName("channel")] string? Channel,
-    [property: JsonPropertyName("symbol")] string? Symbol
+    [property: JsonPropertyName("symbol")] string? Symbol,
+    [property: JsonPropertyName("count")] int? Count = null,
+    [property: JsonPropertyName("beforeTimestamp")] DateTimeOffset? BeforeTimestamp = null
 );

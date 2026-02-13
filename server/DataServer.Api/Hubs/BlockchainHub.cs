@@ -11,6 +11,8 @@ namespace DataServer.Api.Hubs;
 public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog.ILogger logger)
     : Hub
 {
+    private const int MaxRecentTradesCount = 50;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -77,6 +79,9 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
                 break;
             case "unsubscribe":
                 await HandleUnsubscribe(request);
+                break;
+            case "getrecenttrades":
+                await HandleGetRecentTrades(request);
                 break;
             default:
                 await SendErrorResponse(JsonRpcError.MethodNotFound(), request.Id);
@@ -203,6 +208,64 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
                 "Failed to unsubscribe from trades for {Symbol}",
                 request.Params.Symbol
             );
+            await SendErrorResponse(JsonRpcError.InternalError(ex.Message), request.Id);
+        }
+    }
+
+    private async Task HandleGetRecentTrades(JsonRpcRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Params?.Symbol))
+        {
+            await SendErrorResponse(JsonRpcError.InvalidParams("Symbol is required"), request.Id);
+            return;
+        }
+
+        if (!request.Params.Symbol.TryParseEnumMember<Symbol>(out var symbol))
+        {
+            await SendErrorResponse(
+                JsonRpcError.InvalidParams($"Invalid symbol: {request.Params.Symbol}"),
+                request.Id
+            );
+            return;
+        }
+
+        var count = request.Params.Count ?? MaxRecentTradesCount;
+        if (count <= 0 || count > MaxRecentTradesCount)
+        {
+            await SendErrorResponse(
+                JsonRpcError.InvalidParams($"Count must be between 1 and {MaxRecentTradesCount}"),
+                request.Id
+            );
+            return;
+        }
+
+        try
+        {
+            IReadOnlyList<TradeUpdate> trades;
+            if (request.Params.BeforeTimestamp.HasValue)
+            {
+                trades = await blockchainDataService.GetRecentTradesAsync(
+                    symbol,
+                    count,
+                    request.Params.BeforeTimestamp.Value
+                );
+            }
+            else
+            {
+                trades = await blockchainDataService.GetRecentTradesAsync(symbol, count);
+            }
+
+            await SendSuccessResponse(trades, request.Id);
+            logger.Information(
+                "Client {ConnectionId} fetched {Count} recent trades for {Symbol}",
+                Context.ConnectionId,
+                trades.Count,
+                request.Params.Symbol
+            );
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to get recent trades for {Symbol}", request.Params.Symbol);
             await SendErrorResponse(JsonRpcError.InternalError(ex.Message), request.Id);
         }
     }
