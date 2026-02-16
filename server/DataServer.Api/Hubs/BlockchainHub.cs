@@ -263,7 +263,22 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
                 trades = await blockchainDataService.GetRecentTradesAsync(symbol, count);
             }
 
-            await SendSuccessResponse(trades, request.Id);
+            var serializedTrades = trades
+                .Select(t => new
+                {
+                    seqnum = t.Seqnum,
+                    @event = t.Event.ToString().ToLowerInvariant(),
+                    channel = t.Channel.ToString().ToLowerInvariant(),
+                    symbol = t.Symbol.ToEnumMemberValue(),
+                    timestamp = t.Timestamp,
+                    side = t.Side.ToString().ToLowerInvariant(),
+                    qty = t.Qty,
+                    price = t.Price,
+                    tradeId = t.TradeId,
+                })
+                .ToList();
+
+            await SendSuccessResponse(serializedTrades, request.Id);
             logger.Information(
                 "Client {ConnectionId} fetched {Count} recent trades for {Symbol}",
                 Context.ConnectionId,
