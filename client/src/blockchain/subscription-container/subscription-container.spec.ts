@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SubscriptionContainer } from './subscription-container';
+import { SubscriptionContainer, ViewMode } from './subscription-container';
 import { Component } from '@angular/core';
 import { TradeUpdate } from '../models/trade-update';
 
@@ -13,6 +13,7 @@ import { TradeUpdate } from '../models/trade-update';
       (unsubscribed)="onUnsubscribed($event)"
       (resubscribed)="onResubscribed($event)"
       (dismissed)="onDismissed($event)"
+      (viewModeChanged)="onViewModeChanged($event)"
     />
   `,
   imports: [SubscriptionContainer],
@@ -25,6 +26,7 @@ class TestHost {
   unsubscribedSymbol = '';
   resubscribedSymbol = '';
   dismissedSymbol = '';
+  lastViewMode: ViewMode | null = null;
 
   onUnsubscribed(symbol: string): void {
     this.unsubscribedSymbol = symbol;
@@ -36,6 +38,10 @@ class TestHost {
 
   onDismissed(symbol: string): void {
     this.dismissedSymbol = symbol;
+  }
+
+  onViewModeChanged(mode: ViewMode): void {
+    this.lastViewMode = mode;
   }
 }
 
@@ -134,6 +140,29 @@ describe('SubscriptionContainer', () => {
       dismissBtn.click();
 
       expect(host.dismissedSymbol).toBe('BTC-USD');
+    });
+  });
+
+  describe('view mode toggle', () => {
+    it('should emit viewModeChanged with table when toggled from card', () => {
+      fixture.detectChanges();
+
+      const viewToggleBtn: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.view-toggle-btn');
+      viewToggleBtn.click();
+
+      expect(host.lastViewMode).toBe('table');
+    });
+
+    it('should emit viewModeChanged with card when toggled back from table', () => {
+      fixture.detectChanges();
+
+      const viewToggleBtn: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.view-toggle-btn');
+      viewToggleBtn.click();
+      viewToggleBtn.click();
+
+      expect(host.lastViewMode).toBe('card');
     });
   });
 

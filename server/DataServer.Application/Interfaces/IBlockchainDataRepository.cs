@@ -16,5 +16,11 @@ public interface IBlockchainDataRepository
         DateTimeOffset beforeTimestamp,
         CancellationToken cancellationToken = default
     );
+    Task<IReadOnlyList<TradeUpdate>> GetTradesSinceAsync(
+        Symbol symbol,
+        int count,
+        DateTimeOffset afterTimestamp,
+        CancellationToken cancellationToken = default
+    );
     Task ClearTradesAsync(Symbol symbol, CancellationToken cancellationToken = default);
 }

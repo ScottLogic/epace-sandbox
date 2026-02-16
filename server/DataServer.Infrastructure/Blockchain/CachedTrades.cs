@@ -31,5 +31,14 @@ public class CachedTrades
             .ToList();
     }
 
+    public IReadOnlyList<TradeUpdate> GetTradesSince(int count, DateTimeOffset afterTimestamp)
+    {
+        return _trades
+            .Where(t => t.Timestamp > afterTimestamp)
+            .OrderByDescending(t => t.Timestamp)
+            .Take(count)
+            .ToList();
+    }
+
     public int Count => _trades.Count;
 }

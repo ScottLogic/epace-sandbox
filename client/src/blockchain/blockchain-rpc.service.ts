@@ -35,6 +35,16 @@ export class BlockchainRpcService implements OnDestroy {
       .pipe(wrapServiceError<SubscribeResult>('BlockchainRpcService.unsubscribe() failed'));
   }
 
+  getRecentTrades(
+    symbol: Symbol,
+    count: number = 50,
+    afterTimestamp?: string,
+  ): Observable<TradeUpdate[]> {
+    return this.rpcClient
+      .invoke('getRecentTrades', { channel: 'trades', symbol, count, afterTimestamp })
+      .pipe(wrapServiceError<TradeUpdate[]>('BlockchainRpcService.getRecentTrades() failed'));
+  }
+
   onTradeUpdate(): Observable<TradeUpdate> {
     return this.rpcClient
       .onNotification<TradeUpdate>('trades.update')

@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { BlockchainRpcService } from './blockchain-rpc.service';
 import { SymbolSelector } from './symbol-selector/symbol-selector';
 import { SubscriptionContainer } from './subscription-container/subscription-container';
+import { ViewMode } from './subscription-container/subscription-container';
 import { ConnectionStatus } from './connection-status/connection-status';
 import { TradeUpdate, Symbol } from './models/trade-update';
 import { ConnectionState } from '../rpc';
@@ -14,6 +15,8 @@ interface SymbolSubscription {
   trades: TradeUpdate[];
   loading: boolean;
   state: SubscriptionState;
+  historicalLoaded: boolean;
+  viewMode: ViewMode;
 }
 
 @Component({
@@ -85,7 +88,14 @@ export class Blockchain implements OnInit, OnDestroy {
       return;
     }
 
-    const entry: SymbolSubscription = { symbol, trades: [], loading: true, state: 'active' };
+    const entry: SymbolSubscription = {
+      symbol,
+      trades: [],
+      loading: true,
+      state: 'active',
+      historicalLoaded: false,
+      viewMode: 'card',
+    };
     this.subscriptions = [...this.subscriptions, entry];
 
     this.rpcService.subscribe(symbol as Symbol).subscribe({
@@ -108,8 +118,13 @@ export class Blockchain implements OnInit, OnDestroy {
     this.updateSubscription(symbol, { loading: true, state: 'active' });
     this.rpcService.subscribe(symbol as Symbol).subscribe({
       next: () => {
-        this.updateSubscription(symbol, { loading: false });
-        this.cdr.detectChanges();
+        const sub = this.subscriptions.find((s) => s.symbol === symbol);
+        if (sub?.viewMode === 'table') {
+          this.fetchRecentTrades(symbol, this.getLatestTimestamp(symbol), true);
+        } else {
+          this.updateSubscription(symbol, { loading: false });
+          this.cdr.detectChanges();
+        }
       },
       error: (err: unknown) => {
         this.updateSubscription(symbol, { state: 'paused', loading: false });
@@ -124,17 +139,79 @@ export class Blockchain implements OnInit, OnDestroy {
     this.subscriptions = this.subscriptions.filter((s) => s.symbol !== symbol);
   }
 
+  onViewModeChanged(symbol: string, mode: ViewMode): void {
+    this.updateSubscription(symbol, { viewMode: mode });
+
+    if (mode !== 'table') {
+      return;
+    }
+
+    const sub = this.subscriptions.find((s) => s.symbol === symbol);
+    if (!sub || sub.historicalLoaded) {
+      return;
+    }
+
+    this.fetchRecentTrades(symbol);
+  }
+
   dismissError(): void {
     this.connectionError = '';
   }
 
+  private fetchRecentTrades(symbol: string, afterTimestamp?: string, sort: boolean = false): void {
+    this.rpcService.getRecentTrades(symbol as Symbol, 50, afterTimestamp).subscribe({
+      next: (historicalTrades) => {
+        var deduplicatedTrades = this.deduplicateTrades(symbol, historicalTrades);
+        this.updateSubscription(symbol, {
+          trades: sort ? this.sortTradesByDate(deduplicatedTrades) : deduplicatedTrades,
+          loading: false,
+          historicalLoaded: true,
+        });
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.updateSubscription(symbol, { historicalLoaded: false });
+      },
+    });
+  }
+
+  private getLatestTimestamp(symbol: string): string | undefined {
+    const sub = this.subscriptions.find((s) => s.symbol === symbol);
+    if (!sub || sub.trades.length === 0) {
+      return undefined;
+    }
+    return sub.trades
+      .map((t) => t.timestamp)
+      .sort()
+      .pop();
+  }
+
+  private deduplicateTrades(symbol: string, historicalTrades: TradeUpdate[]): TradeUpdate[] {
+    const sub = this.subscriptions.find((s) => s.symbol === symbol);
+    if (!sub) {
+      return historicalTrades;
+    }
+
+    const existingIds = new Set(sub.trades.map((t) => t.tradeId));
+    const newHistorical = historicalTrades.filter((t) => !existingIds.has(t.tradeId));
+    return [...sub.trades, ...newHistorical];
+  }
+
+  private sortTradesByDate(trades: TradeUpdate[]) : TradeUpdate[] {
+    return trades.sort((t1, t2) => t2.timestamp.localeCompare(t1.timestamp))
+  }
+
   private listenForTrades(): void {
     this.tradeSubscription = this.rpcService.onTradeUpdate().subscribe((trade) => {
-      this.subscriptions = this.subscriptions.map((s) =>
-        s.symbol === trade.symbol && s.state === 'active'
-          ? { ...s, trades: [trade, ...s.trades], loading: false }
-          : s,
-      );
+      this.subscriptions = this.subscriptions.map((s) => {
+        if (s.symbol !== trade.symbol || s.state !== 'active') {
+          return s;
+        }
+        if (s.trades.some((t) => t.tradeId === trade.tradeId)) {
+          return { ...s, loading: false };
+        }
+        return { ...s, trades: [trade, ...s.trades], loading: false };
+      });
       this.cdr.detectChanges();
     });
   }
