@@ -15,6 +15,7 @@ export interface GetRecentTradesParams {
   symbol: Symbol;
   count: number;
   beforeTimestamp?: string;
+  afterTimestamp?: string;
 }
 
 export interface BlockchainMethods {

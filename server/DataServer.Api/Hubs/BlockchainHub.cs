@@ -242,7 +242,15 @@ public class BlockchainHub(IBlockchainDataService blockchainDataService, Serilog
         try
         {
             IReadOnlyList<TradeUpdate> trades;
-            if (request.Params.BeforeTimestamp.HasValue)
+            if (request.Params.AfterTimestamp.HasValue)
+            {
+                trades = await blockchainDataService.GetTradesSinceAsync(
+                    symbol,
+                    count,
+                    request.Params.AfterTimestamp.Value
+                );
+            }
+            else if (request.Params.BeforeTimestamp.HasValue)
             {
                 trades = await blockchainDataService.GetRecentTradesAsync(
                     symbol,

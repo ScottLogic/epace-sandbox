@@ -131,7 +131,7 @@ describe('Blockchain', () => {
     it('should preserve trade data when pausing', () => {
       component.onSymbolSelected('BTC-USD');
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [createTrade('BTC-USD')], loading: false, state: 'active', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [createTrade('BTC-USD')], loading: false, state: 'active', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onUnsubscribe('BTC-USD');
@@ -151,7 +151,7 @@ describe('Blockchain', () => {
   describe('onResubscribe', () => {
     it('should set state to active and loading to true', () => {
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [createTrade('BTC-USD')], loading: false, state: 'paused', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [createTrade('BTC-USD')], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onResubscribe('BTC-USD');
@@ -162,7 +162,7 @@ describe('Blockchain', () => {
 
     it('should set loading to false after successful resubscription', () => {
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onResubscribe('BTC-USD');
@@ -174,7 +174,7 @@ describe('Blockchain', () => {
     it('should revert to paused state on resubscription error', () => {
       mockRpcService.subscribe.mockReturnValue(throwError(() => new Error('Subscribe failed')));
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onResubscribe('BTC-USD');
@@ -187,7 +187,7 @@ describe('Blockchain', () => {
     it('should preserve existing trades when resubscribing', () => {
       const existingTrade = createTrade('BTC-USD');
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [existingTrade], loading: false, state: 'paused', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [existingTrade], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onResubscribe('BTC-USD');
@@ -199,7 +199,7 @@ describe('Blockchain', () => {
   describe('onDismiss', () => {
     it('should remove the subscription entirely', () => {
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [createTrade('BTC-USD')], loading: false, state: 'paused', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [createTrade('BTC-USD')], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onDismiss('BTC-USD');
@@ -209,8 +209,8 @@ describe('Blockchain', () => {
 
     it('should only remove the dismissed subscription', () => {
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false },
-        { symbol: 'ETH-USD', trades: [], loading: false, state: 'active', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
+        { symbol: 'ETH-USD', trades: [], loading: false, state: 'active', historicalLoaded: false, viewMode: 'card' },
       ];
 
       component.onDismiss('BTC-USD');
@@ -225,7 +225,7 @@ describe('Blockchain', () => {
       await component.ngOnInit();
 
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [], loading: false, state: 'paused', historicalLoaded: false, viewMode: 'card' },
       ];
 
       mockRpcService._tradeSubject.next(createTrade('BTC-USD'));
@@ -237,7 +237,7 @@ describe('Blockchain', () => {
       await component.ngOnInit();
 
       component.subscriptions = [
-        { symbol: 'BTC-USD', trades: [], loading: false, state: 'active', historicalLoaded: false },
+        { symbol: 'BTC-USD', trades: [], loading: false, state: 'active', historicalLoaded: false, viewMode: 'card' },
       ];
 
       mockRpcService._tradeSubject.next(createTrade('BTC-USD'));
@@ -276,7 +276,7 @@ describe('Blockchain onViewModeChanged', () => {
     component.onSymbolSelected('BTC-USD');
     component.onViewModeChanged('BTC-USD', 'table');
 
-    expect(mockRpcService.getRecentTrades).toHaveBeenCalledWith('BTC-USD', 50);
+    expect(mockRpcService.getRecentTrades).toHaveBeenCalledWith('BTC-USD', 50, undefined);
     const sub = component.subscriptions.find((s) => s.symbol === 'BTC-USD');
     expect(sub!.trades).toEqual(historicalTrades);
     expect(sub!.historicalLoaded).toBe(true);
@@ -340,6 +340,96 @@ describe('Blockchain onViewModeChanged', () => {
     component.onViewModeChanged('BTC-USD', 'table');
 
     expect(mockRpcService.getRecentTrades).not.toHaveBeenCalled();
+  });
+});
+
+describe('Blockchain resubscribe in table mode', () => {
+  let component: Blockchain;
+  let mockRpcService: ReturnType<typeof createMockRpcService>;
+
+  beforeEach(async () => {
+    mockRpcService = createMockRpcService();
+
+    await TestBed.configureTestingModule({
+      imports: [Blockchain],
+      providers: [{ provide: BlockchainRpcService, useValue: mockRpcService }],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Blockchain);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await tick();
+  });
+
+  afterEach(() => {
+    mockRpcService.disconnect();
+  });
+
+  it('should fetch gap trades with afterTimestamp on resubscribe in table mode', () => {
+    const gapTrades = [createTrade('BTC-USD', { tradeId: 'gap-1' })];
+    mockRpcService.getRecentTrades.mockReturnValue(of(gapTrades));
+
+    component.onSymbolSelected('BTC-USD');
+    const liveTrade = createTrade('BTC-USD', { tradeId: 'live-1', timestamp: '2026-01-01T00:00:05Z' });
+    mockRpcService._tradeSubject.next(liveTrade);
+
+    component.onViewModeChanged('BTC-USD', 'table');
+    mockRpcService.getRecentTrades.mockClear();
+    mockRpcService.getRecentTrades.mockReturnValue(of(gapTrades));
+
+    component.onUnsubscribe('BTC-USD');
+    component.onResubscribe('BTC-USD');
+
+    expect(mockRpcService.getRecentTrades).toHaveBeenCalledWith('BTC-USD', 50, '2026-01-01T00:00:05Z');
+  });
+
+  it('should not fetch gap trades on resubscribe in card mode', () => {
+    component.onSymbolSelected('BTC-USD');
+    component.onUnsubscribe('BTC-USD');
+    component.onResubscribe('BTC-USD');
+
+    expect(mockRpcService.getRecentTrades).not.toHaveBeenCalled();
+  });
+
+  it('should merge gap trades with existing trades on resubscribe', () => {
+    const initialTrades = [createTrade('BTC-USD', { tradeId: 'hist-1' })];
+    mockRpcService.getRecentTrades.mockReturnValue(of(initialTrades));
+
+    component.onSymbolSelected('BTC-USD');
+    component.onViewModeChanged('BTC-USD', 'table');
+
+    const gapTrades = [createTrade('BTC-USD', { tradeId: 'gap-1' })];
+    mockRpcService.getRecentTrades.mockReturnValue(of(gapTrades));
+
+    component.onUnsubscribe('BTC-USD');
+    component.onResubscribe('BTC-USD');
+
+    const sub = component.subscriptions.find((s) => s.symbol === 'BTC-USD');
+    const tradeIds = sub!.trades.map((t) => t.tradeId);
+    expect(tradeIds).toContain('hist-1');
+    expect(tradeIds).toContain('gap-1');
+  });
+
+  it('should pass undefined afterTimestamp when no trades exist on resubscribe', () => {
+    mockRpcService.getRecentTrades.mockReturnValue(of([]));
+
+    component.onSymbolSelected('BTC-USD');
+    component.onViewModeChanged('BTC-USD', 'table');
+    mockRpcService.getRecentTrades.mockClear();
+    mockRpcService.getRecentTrades.mockReturnValue(of([]));
+
+    component.onUnsubscribe('BTC-USD');
+    component.onResubscribe('BTC-USD');
+
+    expect(mockRpcService.getRecentTrades).toHaveBeenCalledWith('BTC-USD', 50, undefined);
+  });
+
+  it('should track viewMode per subscription', () => {
+    component.onSymbolSelected('BTC-USD');
+    component.onViewModeChanged('BTC-USD', 'table');
+
+    const sub = component.subscriptions.find((s) => s.symbol === 'BTC-USD');
+    expect(sub!.viewMode).toBe('table');
   });
 });
 

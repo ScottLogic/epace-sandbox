@@ -66,6 +66,29 @@ public class InMemoryBlockchainDataRepository(IMemoryCache memoryCache) : IBlock
         return Task.FromResult<IReadOnlyList<TradeUpdate>>(Array.Empty<TradeUpdate>());
     }
 
+    public Task<IReadOnlyList<TradeUpdate>> GetTradesSinceAsync(
+        Symbol symbol,
+        int count,
+        DateTimeOffset afterTimestamp,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var cacheKey = GetCacheKey(symbol);
+
+        lock (_lock)
+        {
+            if (
+                memoryCache.TryGetValue<CachedTrades>(cacheKey, out var cachedTrades)
+                && cachedTrades != null
+            )
+            {
+                return Task.FromResult(cachedTrades.GetTradesSince(count, afterTimestamp));
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<TradeUpdate>>(Array.Empty<TradeUpdate>());
+    }
+
     public Task ClearTradesAsync(Symbol symbol, CancellationToken cancellationToken = default)
     {
         var cacheKey = GetCacheKey(symbol);

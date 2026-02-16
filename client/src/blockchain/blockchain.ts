@@ -16,6 +16,7 @@ interface SymbolSubscription {
   loading: boolean;
   state: SubscriptionState;
   historicalLoaded: boolean;
+  viewMode: ViewMode;
 }
 
 @Component({
@@ -93,6 +94,7 @@ export class Blockchain implements OnInit, OnDestroy {
       loading: true,
       state: 'active',
       historicalLoaded: false,
+      viewMode: 'card',
     };
     this.subscriptions = [...this.subscriptions, entry];
 
@@ -116,8 +118,13 @@ export class Blockchain implements OnInit, OnDestroy {
     this.updateSubscription(symbol, { loading: true, state: 'active' });
     this.rpcService.subscribe(symbol as Symbol).subscribe({
       next: () => {
-        this.updateSubscription(symbol, { loading: false });
-        this.cdr.detectChanges();
+        const sub = this.subscriptions.find((s) => s.symbol === symbol);
+        if (sub?.viewMode === 'table') {
+          this.fetchRecentTrades(symbol, this.getLatestTimestamp(symbol));
+        } else {
+          this.updateSubscription(symbol, { loading: false });
+          this.cdr.detectChanges();
+        }
       },
       error: (err: unknown) => {
         this.updateSubscription(symbol, { state: 'paused', loading: false });
@@ -133,6 +140,8 @@ export class Blockchain implements OnInit, OnDestroy {
   }
 
   onViewModeChanged(symbol: string, mode: ViewMode): void {
+    this.updateSubscription(symbol, { viewMode: mode });
+
     if (mode !== 'table') {
       return;
     }
@@ -149,8 +158,8 @@ export class Blockchain implements OnInit, OnDestroy {
     this.connectionError = '';
   }
 
-  private fetchRecentTrades(symbol: string): void {
-    this.rpcService.getRecentTrades(symbol as Symbol, 50).subscribe({
+  private fetchRecentTrades(symbol: string, afterTimestamp?: string): void {
+    this.rpcService.getRecentTrades(symbol as Symbol, 50, afterTimestamp).subscribe({
       next: (historicalTrades) => {
         this.updateSubscription(symbol, {
           trades: this.deduplicateTrades(symbol, historicalTrades),
@@ -163,6 +172,17 @@ export class Blockchain implements OnInit, OnDestroy {
         this.updateSubscription(symbol, { historicalLoaded: false });
       },
     });
+  }
+
+  private getLatestTimestamp(symbol: string): string | undefined {
+    const sub = this.subscriptions.find((s) => s.symbol === symbol);
+    if (!sub || sub.trades.length === 0) {
+      return undefined;
+    }
+    return sub.trades
+      .map((t) => t.timestamp)
+      .sort()
+      .pop();
   }
 
   private deduplicateTrades(symbol: string, historicalTrades: TradeUpdate[]): TradeUpdate[] {

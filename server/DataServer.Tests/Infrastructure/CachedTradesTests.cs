@@ -189,6 +189,74 @@ public class CachedTradesTests
     }
 
     [Fact]
+    public void GetTradesSince_ReturnsTradesNewerThanTimestamp()
+    {
+        var cachedTrades = new CachedTrades();
+        var now = DateTimeOffset.UtcNow;
+        var trade1 = CreateTestTrade(Symbol.BtcUsd, "trade-1", now.AddMinutes(-5));
+        var trade2 = CreateTestTrade(Symbol.BtcUsd, "trade-2", now.AddMinutes(-3));
+        var trade3 = CreateTestTrade(Symbol.BtcUsd, "trade-3", now.AddMinutes(-1));
+
+        cachedTrades.TryAdd(trade1);
+        cachedTrades.TryAdd(trade2);
+        cachedTrades.TryAdd(trade3);
+
+        var result = cachedTrades.GetTradesSince(10, now.AddMinutes(-3));
+
+        Assert.Single(result);
+        Assert.Equal("trade-3", result[0].TradeId);
+    }
+
+    [Fact]
+    public void GetTradesSince_ReturnsEmptyWhenNoTradesNewerThanTimestamp()
+    {
+        var cachedTrades = new CachedTrades();
+        var now = DateTimeOffset.UtcNow;
+        cachedTrades.TryAdd(CreateTestTrade(Symbol.BtcUsd, "trade-1", now.AddMinutes(-5)));
+
+        var result = cachedTrades.GetTradesSince(10, now);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void GetTradesSince_LimitsResultsToRequestedCount()
+    {
+        var cachedTrades = new CachedTrades();
+        var now = DateTimeOffset.UtcNow;
+        for (int i = 0; i < 10; i++)
+        {
+            cachedTrades.TryAdd(
+                CreateTestTrade(Symbol.BtcUsd, $"trade-{i}", now.AddMinutes(-10 + i))
+            );
+        }
+
+        var result = cachedTrades.GetTradesSince(3, now.AddMinutes(-15));
+
+        Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public void GetTradesSince_ReturnsSortedByTimestampDescending()
+    {
+        var cachedTrades = new CachedTrades();
+        var now = DateTimeOffset.UtcNow;
+        var trade1 = CreateTestTrade(Symbol.BtcUsd, "trade-1", now.AddMinutes(-3));
+        var trade2 = CreateTestTrade(Symbol.BtcUsd, "trade-2", now.AddMinutes(-2));
+        var trade3 = CreateTestTrade(Symbol.BtcUsd, "trade-3", now.AddMinutes(-1));
+
+        cachedTrades.TryAdd(trade1);
+        cachedTrades.TryAdd(trade2);
+        cachedTrades.TryAdd(trade3);
+
+        var result = cachedTrades.GetTradesSince(10, now.AddMinutes(-4));
+
+        Assert.Equal("trade-3", result[0].TradeId);
+        Assert.Equal("trade-2", result[1].TradeId);
+        Assert.Equal("trade-1", result[2].TradeId);
+    }
+
+    [Fact]
     public void Count_ReturnsZeroForNewInstance()
     {
         var cachedTrades = new CachedTrades();
