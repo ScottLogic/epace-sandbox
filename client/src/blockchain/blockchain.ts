@@ -120,7 +120,7 @@ export class Blockchain implements OnInit, OnDestroy {
       next: () => {
         const sub = this.subscriptions.find((s) => s.symbol === symbol);
         if (sub?.viewMode === 'table') {
-          this.fetchRecentTrades(symbol, this.getLatestTimestamp(symbol));
+          this.fetchRecentTrades(symbol, this.getLatestTimestamp(symbol), true);
         } else {
           this.updateSubscription(symbol, { loading: false });
           this.cdr.detectChanges();
@@ -158,11 +158,12 @@ export class Blockchain implements OnInit, OnDestroy {
     this.connectionError = '';
   }
 
-  private fetchRecentTrades(symbol: string, afterTimestamp?: string): void {
+  private fetchRecentTrades(symbol: string, afterTimestamp?: string, sort: boolean = false): void {
     this.rpcService.getRecentTrades(symbol as Symbol, 50, afterTimestamp).subscribe({
       next: (historicalTrades) => {
+        var deduplicatedTrades = this.deduplicateTrades(symbol, historicalTrades);
         this.updateSubscription(symbol, {
-          trades: this.deduplicateTrades(symbol, historicalTrades),
+          trades: sort ? this.sortTradesByDate(deduplicatedTrades) : deduplicatedTrades,
           loading: false,
           historicalLoaded: true,
         });
@@ -194,6 +195,10 @@ export class Blockchain implements OnInit, OnDestroy {
     const existingIds = new Set(sub.trades.map((t) => t.tradeId));
     const newHistorical = historicalTrades.filter((t) => !existingIds.has(t.tradeId));
     return [...sub.trades, ...newHistorical];
+  }
+
+  private sortTradesByDate(trades: TradeUpdate[]) : TradeUpdate[] {
+    return trades.sort((t1, t2) => t2.timestamp.localeCompare(t1.timestamp))
   }
 
   private listenForTrades(): void {
