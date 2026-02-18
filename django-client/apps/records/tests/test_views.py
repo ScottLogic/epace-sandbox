@@ -289,3 +289,45 @@ class TestDashboardView(TestCase):
         )
         self.assertContains(response, "sortable")
         self.assertContains(response, "sales_sort=date")
+
+    def test_filter_sales_by_multiple_item_names(self):
+        response = self.client.get(
+            self.url,
+            {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "sales_item_name": "Widget A, Widget B",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        sales = list(response.context["sales"])
+        self.assertEqual(len(sales), 2)
+
+    def test_filter_sales_by_multiple_item_names_partial_match(self):
+        response = self.client.get(
+            self.url,
+            {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "sales_item_name": "Widget A, Nonexistent",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        sales = list(response.context["sales"])
+        self.assertEqual(len(sales), 1)
+        self.assertEqual(sales[0].item_name, "Widget A")
+
+    def test_filter_multiple_item_names_combined_with_price(self):
+        response = self.client.get(
+            self.url,
+            {
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "sales_item_name": "Widget A, Widget B",
+                "sales_price_min": "55",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        sales = list(response.context["sales"])
+        self.assertEqual(len(sales), 1)
+        self.assertEqual(sales[0].item_name, "Widget B")

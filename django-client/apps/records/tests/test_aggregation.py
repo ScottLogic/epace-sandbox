@@ -130,6 +130,40 @@ class TestAggregationService(TestCase):
         self.assertEqual(sales.count(), 1)
         self.assertEqual(sales.first().item_name, "Widget B")
 
+    def test_get_sales_filter_by_multiple_item_names(self):
+        sales = AggregationService.get_sales(
+            date(2024, 1, 1), date(2024, 12, 31), item_name="Widget A, Widget B"
+        )
+        self.assertEqual(sales.count(), 2)
+
+    def test_get_sales_filter_by_multiple_item_names_partial(self):
+        sales = AggregationService.get_sales(
+            date(2024, 1, 1), date(2024, 12, 31), item_name="Widget A, Nonexistent"
+        )
+        self.assertEqual(sales.count(), 1)
+        self.assertEqual(sales.first().item_name, "Widget A")
+
+    def test_get_sales_filter_by_single_comma_separated_term(self):
+        sales = AggregationService.get_sales(
+            date(2024, 1, 1), date(2024, 12, 31), item_name="Widget A"
+        )
+        self.assertEqual(sales.count(), 1)
+
+    def test_get_purchases_filter_by_multiple_item_names(self):
+        PurchaseRecord.objects.create(
+            date=date(2024, 3, 1),
+            item_name="Gadget Z",
+            quantity=10,
+            unit_price=Decimal("2.00"),
+            total_price=Decimal("20.00"),
+            shipping_cost=Decimal("1.00"),
+            post_code="W1 1AA",
+        )
+        purchases = AggregationService.get_purchases(
+            date(2024, 1, 1), date(2024, 12, 31), item_name="Raw, Gadget"
+        )
+        self.assertEqual(purchases.count(), 2)
+
     def test_get_summary_with_filters(self):
         summary = AggregationService.get_summary(
             date(2024, 1, 1), date(2024, 12, 31),

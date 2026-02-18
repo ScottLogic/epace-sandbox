@@ -1,8 +1,10 @@
 from datetime import date
 from decimal import Decimal, InvalidOperation
+from functools import reduce
+from operator import or_
 from typing import Optional
 
-from django.db.models import QuerySet, Sum
+from django.db.models import Q, QuerySet, Sum
 
 from apps.records.models import PurchaseRecord, SalesRecord
 
@@ -29,7 +31,10 @@ class AggregationService:
         post_code: str = "",
     ) -> QuerySet:
         if item_name:
-            qs = qs.filter(item_name__icontains=item_name)
+            terms = [t.strip() for t in item_name.split(",") if t.strip()]
+            if terms:
+                name_q = reduce(or_, (Q(item_name__icontains=t) for t in terms))
+                qs = qs.filter(name_q)
         if price_min:
             try:
                 qs = qs.filter(total_price__gte=Decimal(price_min))

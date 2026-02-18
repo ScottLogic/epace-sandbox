@@ -27,7 +27,7 @@
             <h3>Sales Filters</h3>
             <div class="filter-row">
                 <label for="sales_item_name">Item Name:</label>
-                <input type="text" id="sales_item_name" name="sales_item_name" value="{{ sales_filters.item_name }}" placeholder="Contains...">
+                <input type="text" id="sales_item_name" name="sales_item_name" value="{{ sales_filters.item_name }}" placeholder="e.g. Widget, Gadget">
 
                 <label for="sales_price_min">Price Min:</label>
                 <input type="number" id="sales_price_min" name="sales_price_min" value="{{ sales_filters.price_min }}" step="0.01" min="0" placeholder="0.00">
@@ -44,7 +44,7 @@
             <h3>Purchase Filters</h3>
             <div class="filter-row">
                 <label for="purchases_item_name">Item Name:</label>
-                <input type="text" id="purchases_item_name" name="purchases_item_name" value="{{ purchases_filters.item_name }}" placeholder="Contains...">
+                <input type="text" id="purchases_item_name" name="purchases_item_name" value="{{ purchases_filters.item_name }}" placeholder="e.g. Widget, Gadget">
 
                 <label for="purchases_price_min">Price Min:</label>
                 <input type="number" id="purchases_price_min" name="purchases_price_min" value="{{ purchases_filters.price_min }}" step="0.01" min="0" placeholder="0.00">
