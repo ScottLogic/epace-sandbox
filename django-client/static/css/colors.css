@@ -1,62 +1,96 @@
 :root {
-    --mtg-red: #f9aa8f;
-    --mtg-blue: #aae0fa;
-    --mtg-green: #9bd3ae;
-    --mtg-white: #fffbd5;
-    --mtg-black: #cbc2bf;
+  /* Forest (Green) */
+  --mtg-light-green: rgb(196, 211, 202);
+  --mtg-dark-green: rgb(0, 115, 62);
 
-    --theme: red;
-    --text: white;
-    --subtext: grey;
+  /* Island (Blue) */
+  --mtg-light-blue: rgb(179, 206, 234);
+  --mtg-dark-blue: rgb(14, 104, 171);
 
-    --bg0: black;
-    --bg1: grey;
+  /* Plains (White) */
+  --mtg-light-white: rgb(248, 231, 185);
+  --mtg-dark-white: rgb(249, 250, 244);
+
+  /* Mountain (Red) */
+  --mtg-light-red: rgb(235, 159, 130);
+  --mtg-dark-red: rgb(211, 32, 42);
+
+  /* Swamp (Black) */
+  --mtg-light-black: rgb(166, 159, 157);
+  --mtg-dark-black: rgb(21, 11, 0);
+
+  --bg0: rgb(21, 11, 0);
+  --bg1: rgb(35, 34, 34);
+  --bg2:  rgb(71, 70, 69);
+
+  --theme-light: var(--mtg-light-white);
+  --theme-dark: var(--mtg-dark-white);
+  --text: var(--mtg-dark-white);
+  --text-dark: var(--bg1);
+  --subtext: var(--mtg-light-white);
+
 }
 
-
-.five-bands {
-  height: 100vh; /* or any height you need */
-
+.five-bands-light {
   /* Customize colors here */
-  --c1: #1E3A8A; /* Indigo 800 */
-  --c2: #2563EB; /* Blue 600 */
-  --c3: #10B981; /* Emerald 500 */
-  --c4: #F59E0B; /* Amber 500 */
-  --c5: #EF4444; /* Red 500 */
+  --c1: var(--mtg-light-white); /* Indigo 800 */
+  --c2: var(--mtg-light-blue); /* Blue 600 */
+  --c3: var(--mtg-light-black); /* Emerald 500 */
+  --c4: var(--mtg-light-red); /* Amber 500 */
+  --c5: var(--mtg-light-green); /* Red 500 */
 
   /* Size of the soft separator between bands */
-  --gap: 4%;
+  --gap: 1%;
 
   background: linear-gradient(
-    to bottom,
+    to right,
 
-    /* Band 1 */
-    var(--c1) 0%,
+    /* Band 1 */ var(--c1) 0%,
     var(--c1) calc(20% - var(--gap)),
-    /* Separator 1 */
-    color-mix(in oklab, var(--c1) 50%, var(--c2) 50%) 20%,
+    /* Separator 1 */ color-mix(in oklab, var(--c1) 50%, var(--c2) 50%) 20%,
     var(--c2) calc(20% + var(--gap)),
-
-    /* Band 2 */
-    var(--c2) calc(40% - var(--gap)),
-    /* Separator 2 */
-    color-mix(in oklab, var(--c2) 50%, var(--c3) 50%) 40%,
+    /* Band 2 */ var(--c2) calc(40% - var(--gap)),
+    /* Separator 2 */ color-mix(in oklab, var(--c2) 50%, var(--c3) 50%) 40%,
     var(--c3) calc(40% + var(--gap)),
-
-    /* Band 3 */
-    var(--c3) calc(60% - var(--gap)),
-    /* Separator 3 */
-    color-mix(in oklab, var(--c3) 50%, var(--c4) 50%) 60%,
+    /* Band 3 */ var(--c3) calc(60% - var(--gap)),
+    /* Separator 3 */ color-mix(in oklab, var(--c3) 50%, var(--c4) 50%) 60%,
     var(--c4) calc(60% + var(--gap)),
-
-    /* Band 4 */
-    var(--c4) calc(80% - var(--gap)),
-    /* Separator 4 */
-    color-mix(in oklab, var(--c4) 50%, var(--c5) 50%) 80%,
+    /* Band 4 */ var(--c4) calc(80% - var(--gap)),
+    /* Separator 4 */ color-mix(in oklab, var(--c4) 50%, var(--c5) 50%) 80%,
     var(--c5) calc(80% + var(--gap)),
+    /* Band 5 */ var(--c5) 100%
+  );
+  background-attachment: fixed; /* nice effect if the page scrolls */
+}
 
-    /* Band 5 */
-    var(--c5) 100%
+.five-bands-dark {
+  /* Customize colors here */
+  --c1: var(--mtg-dark-white); /* Indigo 800 */
+  --c2: var(--mtg-dark-blue); /* Blue 600 */
+  --c3: var(--mtg-dark-black); /* Emerald 500 */
+  --c4: var(--mtg-dark-red); /* Amber 500 */
+  --c5: var(--mtg-dark-green); /* Red 500 */
+
+  /* Size of the soft separator between bands */
+  --gap: 1%;
+
+  background: linear-gradient(
+    to right,
+
+    /* Band 1 */ var(--c1) 0%,
+    var(--c1) calc(20% - var(--gap)),
+    /* Separator 1 */ color-mix(in oklab, var(--c1) 50%, var(--c2) 50%) 20%,
+    var(--c2) calc(20% + var(--gap)),
+    /* Band 2 */ var(--c2) calc(40% - var(--gap)),
+    /* Separator 2 */ color-mix(in oklab, var(--c2) 50%, var(--c3) 50%) 40%,
+    var(--c3) calc(40% + var(--gap)),
+    /* Band 3 */ var(--c3) calc(60% - var(--gap)),
+    /* Separator 3 */ color-mix(in oklab, var(--c3) 50%, var(--c4) 50%) 60%,
+    var(--c4) calc(60% + var(--gap)),
+    /* Band 4 */ var(--c4) calc(80% - var(--gap)),
+    /* Separator 4 */ color-mix(in oklab, var(--c4) 50%, var(--c5) 50%) 80%,
+    var(--c5) calc(80% + var(--gap)),
+    /* Band 5 */ var(--c5) 100%
   );
   background-attachment: fixed; /* nice effect if the page scrolls */
 }
