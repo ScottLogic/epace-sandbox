@@ -5,6 +5,19 @@
 {% block content %}
 <h1>Sales &amp; Purchases Dashboard</h1>
 
+<section class="search-section">
+    <form method="get" action="{% url 'records:dashboard' %}">
+        <input type="hidden" name="start_date" value="{{ start_date }}">
+        <input type="hidden" name="end_date" value="{{ end_date }}">
+        <label for="q">Search:</label>
+        <input type="text" id="q" name="q" value="{{ search_term }}" placeholder="Search by item name, postcode, or currency">
+        <button type="submit">Search</button>
+        {% if search_term %}
+        <a href="{% url 'records:dashboard' %}?start_date={{ start_date }}&amp;end_date={{ end_date }}" class="clear-search">Clear</a>
+        {% endif %}
+    </form>
+</section>
+
 <section class="filter-section">
     <form method="get" action="{% url 'records:dashboard' %}">
         <label for="start_date">Start Date:</label>
@@ -13,12 +26,15 @@
         <label for="end_date">End Date:</label>
         <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
 
+        {% if search_term %}
+        <input type="hidden" name="q" value="{{ search_term }}">
+        {% endif %}
         <button type="submit">Query</button>
     </form>
 </section>
 
 <section class="summary-section">
-    <h2>Summary</h2>
+    <h2>Summary{% if search_term %} <span class="filtered-indicator" title="Showing filtered results">&#x1F50D;</span>{% endif %}</h2>
     <table class="summary-table">
         <thead>
             <tr>

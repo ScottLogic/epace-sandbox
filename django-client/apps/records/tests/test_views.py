@@ -105,3 +105,87 @@ class TestDashboardView(TestCase):
         self.assertContains(response, "Widget B")
         self.assertContains(response, "Raw Material X")
         self.assertContains(response, "Raw Material Y")
+
+    def test_search_by_item_name(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "Widget"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Widget A")
+        self.assertContains(response, "Widget B")
+        self.assertNotContains(response, "Raw Material X")
+        self.assertNotContains(response, "Raw Material Y")
+
+    def test_search_by_post_code(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "SW1A"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Widget A")
+        self.assertNotContains(response, "Widget B")
+
+    def test_search_by_currency(self):
+        SalesRecord.objects.create(
+            date=date(2024, 6, 1),
+            item_name="Euro Item",
+            quantity=1,
+            unit_price=Decimal("10.00"),
+            total_price=Decimal("10.00"),
+            shipping_cost=Decimal("1.00"),
+            post_code="D01",
+            currency="EUR",
+        )
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "EUR"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Euro Item")
+        self.assertNotContains(response, "Widget A")
+
+    def test_search_case_insensitive(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "widget"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Widget A")
+        self.assertContains(response, "Widget B")
+
+    def test_search_with_date_filter(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-01-31", "q": "Widget"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Widget A")
+        self.assertNotContains(response, "Widget B")
+
+    def test_search_no_results(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "nonexistent"},
+        )
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertEqual(context["summary"]["sales_count"], 0)
+        self.assertEqual(context["summary"]["purchases_count"], 0)
+
+    def test_search_term_in_context(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "Widget"},
+        )
+        self.assertEqual(response.context["search_term"], "Widget")
+
+    def test_search_summary_reflects_filtered_results(self):
+        response = self.client.get(
+            self.url,
+            {"start_date": "2024-01-01", "end_date": "2024-12-31", "q": "Widget A"},
+        )
+        context = response.context
+        self.assertEqual(context["summary"]["total_sales"], Decimal("50.00"))
+        self.assertEqual(context["summary"]["sales_count"], 1)
+        self.assertEqual(context["summary"]["purchases_count"], 0)

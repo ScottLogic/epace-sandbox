@@ -22,13 +22,16 @@ def dashboard(request):
     except ValueError:
         end_date = today
 
-    summary = AggregationService.get_summary(start_date, end_date)
-    sales = AggregationService.get_sales(start_date, end_date)
-    purchases = AggregationService.get_purchases(start_date, end_date)
+    search_term = request.GET.get("q", "").strip()
+
+    summary = AggregationService.get_summary(start_date, end_date, search_term)
+    sales = AggregationService.get_sales(start_date, end_date, search_term)
+    purchases = AggregationService.get_purchases(start_date, end_date, search_term)
 
     context = {
         "start_date": start_date.isoformat(),
         "end_date": end_date.isoformat(),
+        "search_term": search_term,
         "summary": summary,
         "sales": sales,
         "purchases": purchases,
