@@ -1,0 +1,62 @@
+:root {
+    --mtg-red: #f9aa8f;
+    --mtg-blue: #aae0fa;
+    --mtg-green: #9bd3ae;
+    --mtg-white: #fffbd5;
+    --mtg-black: #cbc2bf;
+
+    --theme: red;
+    --text: white;
+    --subtext: grey;
+
+    --bg0: black;
+    --bg1: grey;
+}
+
+
+.five-bands {
+  height: 100vh; /* or any height you need */
+
+  /* Customize colors here */
+  --c1: #1E3A8A; /* Indigo 800 */
+  --c2: #2563EB; /* Blue 600 */
+  --c3: #10B981; /* Emerald 500 */
+  --c4: #F59E0B; /* Amber 500 */
+  --c5: #EF4444; /* Red 500 */
+
+  /* Size of the soft separator between bands */
+  --gap: 4%;
+
+  background: linear-gradient(
+    to bottom,
+
+    /* Band 1 */
+    var(--c1) 0%,
+    var(--c1) calc(20% - var(--gap)),
+    /* Separator 1 */
+    color-mix(in oklab, var(--c1) 50%, var(--c2) 50%) 20%,
+    var(--c2) calc(20% + var(--gap)),
+
+    /* Band 2 */
+    var(--c2) calc(40% - var(--gap)),
+    /* Separator 2 */
+    color-mix(in oklab, var(--c2) 50%, var(--c3) 50%) 40%,
+    var(--c3) calc(40% + var(--gap)),
+
+    /* Band 3 */
+    var(--c3) calc(60% - var(--gap)),
+    /* Separator 3 */
+    color-mix(in oklab, var(--c3) 50%, var(--c4) 50%) 60%,
+    var(--c4) calc(60% + var(--gap)),
+
+    /* Band 4 */
+    var(--c4) calc(80% - var(--gap)),
+    /* Separator 4 */
+    color-mix(in oklab, var(--c4) 50%, var(--c5) 50%) 80%,
+    var(--c5) calc(80% + var(--gap)),
+
+    /* Band 5 */
+    var(--c5) 100%
+  );
+  background-attachment: fixed; /* nice effect if the page scrolls */
+}
