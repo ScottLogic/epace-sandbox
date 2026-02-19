@@ -7,12 +7,12 @@ from apps.records.models import CSVFormatProfile
 class TestCSVFormatProfileModel(TestCase):
     def _valid_mappings(self):
         return {
-            "Date": "date",
-            "Item": "item_name",
-            "Qty": "quantity",
-            "Unit Price": "unit_price",
-            "Total": "total_price",
-            "Postcode": "post_code",
+            "0": "date",
+            "1": "item_name",
+            "2": "quantity",
+            "3": "unit_price",
+            "4": "total_price",
+            "5": "post_code",
         }
 
     def _build_profile(self, **overrides):
@@ -72,7 +72,7 @@ class TestCSVFormatProfileModel(TestCase):
 
     def test_clean_rejects_invalid_field_names(self):
         mappings = self._valid_mappings()
-        mappings["Extra"] = "nonexistent_field"
+        mappings["6"] = "nonexistent_field"
         profile = self._build_profile(field_mappings=mappings)
         with self.assertRaises(ValidationError) as ctx:
             profile.full_clean()
@@ -80,7 +80,7 @@ class TestCSVFormatProfileModel(TestCase):
         self.assertIn("nonexistent_field", str(ctx.exception.message_dict["field_mappings"]))
 
     def test_clean_rejects_missing_required_fields(self):
-        mappings = {"Date": "date", "Item": "item_name"}
+        mappings = {"0": "date", "1": "item_name"}
         profile = self._build_profile(field_mappings=mappings)
         with self.assertRaises(ValidationError) as ctx:
             profile.full_clean()
@@ -94,8 +94,8 @@ class TestCSVFormatProfileModel(TestCase):
 
     def test_clean_accepts_all_fields_including_optional(self):
         mappings = self._valid_mappings()
-        mappings["Shipping"] = "shipping_cost"
-        mappings["Currency"] = "currency"
+        mappings["6"] = "shipping_cost"
+        mappings["7"] = "currency"
         profile = self._build_profile(field_mappings=mappings)
         profile.full_clean()
 
@@ -158,3 +158,11 @@ class TestCSVFormatProfileModel(TestCase):
         profile.save()
         profile.refresh_from_db()
         self.assertEqual(profile.date_format, "%d/%m/%Y")
+
+    def test_clean_rejects_non_integer_keys(self):
+        mappings = {"header_name": "date", "1": "item_name"}
+        profile = self._build_profile(field_mappings=mappings)
+        with self.assertRaises(ValidationError) as ctx:
+            profile.full_clean()
+        self.assertIn("field_mappings", ctx.exception.message_dict)
+        self.assertIn("header_name", str(ctx.exception.message_dict["field_mappings"]))

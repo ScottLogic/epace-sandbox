@@ -68,7 +68,7 @@ class CSVFormatProfile(models.Model):
         help_text="Python strftime format string, e.g. '%Y-%m-%d' or '%d/%m/%Y'",
     )
     field_mappings = models.JSONField(
-        help_text="Dictionary mapping CSV header names to model field names",
+        help_text="Dictionary mapping column index (as string) to model field name",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -109,6 +109,17 @@ class CSVFormatProfile(models.Model):
             raise ValidationError(
                 {"field_mappings": "field_mappings must be a non-empty dictionary."}
             )
+
+        for key in self.field_mappings:
+            if not str(key).isdigit():
+                raise ValidationError(
+                    {
+                        "field_mappings": (
+                            f"Key '{key}' is not a valid column index. "
+                            f"Keys must be non-negative integer strings (e.g. '0', '1', '2')."
+                        )
+                    }
+                )
 
         valid_fields = self._get_model_fields()
         mapping_values = set(self.field_mappings.values())
