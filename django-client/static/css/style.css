@@ -126,6 +126,14 @@ button:hover {
     color: var(--accent);
 }
 
+label {
+    align-self: center;
+}
+
+input[type="checkbox"] {
+    accent-color: var(--accent-hover);
+}
+
 .sort-arrow {
     font-size: 0.7rem;
     line-height: 1;
@@ -198,9 +206,13 @@ button:hover {
 }
 
 .detail-button:hover {
-    background-color: #2980b9;
+    background-color: var(--accent-hover);
 }
 
 .table-controls {
-    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
 }
+
+
