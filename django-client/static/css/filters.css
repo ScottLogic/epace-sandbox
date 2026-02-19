@@ -11,6 +11,13 @@
     gap: 1rem;
 }
 
+.dashboard-filter-row {
+    display: grid;
+    grid-template-columns: 14rem auto;
+    align-items: center;
+    gap: 1rem;
+}
+
 .filter-row {
     display: flex;
     flex-direction: row;
