@@ -1,8 +1,4 @@
-import csv
-import io
 import json
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.contrib import admin, messages
@@ -229,73 +225,38 @@ class CSVFormatProfileAdmin(admin.ModelAdmin):
         except UnicodeDecodeError:
             return JsonResponse({"error": "File encoding error. Please upload a UTF-8 encoded CSV."})
 
-        delimiter = profile.delimiter
-        if delimiter == "\\t":
-            delimiter = "\t"
+        parser = DefaultCSVParser(
+            delimiter=profile.delimiter,
+            date_format=profile.date_format,
+            field_mappings=profile.field_mappings,
+        )
+        records, errors = parser.parse(file_content)
 
-        reader = csv.reader(io.StringIO(file_content), delimiter=delimiter)
-        rows = list(reader)
+        if not records and errors:
+            fatal_messages = [
+                "CSV file is empty or has no header row.",
+                "CSV file has headers but no data rows.",
+            ]
+            if len(errors) == 1 and errors[0] in fatal_messages:
+                return JsonResponse({"error": errors[0]})
 
-        if not rows:
-            return JsonResponse({"error": "CSV file is empty."})
-
-        csv_headers = rows[0]
         mappings = profile.field_mappings
-        data_rows = rows[1:]
-
-        parsed_records = []
-        errors = []
-
-        for row_num, row in enumerate(data_rows, start=2):
-            record = {}
-            row_errors = []
-            for col_index_str, field_name in mappings.items():
-                col_index = int(col_index_str)
-                if col_index >= len(row):
-                    row_errors.append(f"Column {col_index} out of range")
-                    continue
-                raw_value = row[col_index].strip()
-                if field_name == "date" and raw_value:
-                    try:
-                        parsed_date = datetime.strptime(raw_value, profile.date_format).date()
-                        record[field_name] = str(parsed_date)
-                    except ValueError:
-                        row_errors.append(f"Invalid date '{raw_value}' for format '{profile.date_format}'")
-                        record[field_name] = raw_value
-                elif field_name in ("quantity",) and raw_value:
-                    try:
-                        record[field_name] = str(int(raw_value))
-                    except ValueError:
-                        row_errors.append(f"Invalid integer '{raw_value}' for {field_name}")
-                        record[field_name] = raw_value
-                elif field_name in ("unit_price", "total_price", "shipping_cost") and raw_value:
-                    try:
-                        record[field_name] = str(Decimal(raw_value))
-                    except InvalidOperation:
-                        row_errors.append(f"Invalid decimal '{raw_value}' for {field_name}")
-                        record[field_name] = raw_value
-                else:
-                    record[field_name] = raw_value
-
-            if row_errors:
-                errors.append(f"Row {row_num}: {'; '.join(row_errors)}")
-            parsed_records.append(record)
-
+        header_fields = [mappings[k] for k in sorted(mappings.keys(), key=lambda x: int(x))]
         mapped_headers = []
         for col_index_str in sorted(mappings.keys(), key=lambda x: int(x)):
             field_name = mappings[col_index_str]
-            col_index = int(col_index_str)
-            csv_header = csv_headers[col_index] if col_index < len(csv_headers) else f"Column {col_index}"
-            mapped_headers.append(f"{field_name} (CSV: {csv_header})")
+            mapped_headers.append(field_name)
 
-        header_fields = [mappings[k] for k in sorted(mappings.keys(), key=lambda x: int(x))]
         preview = []
-        for record in parsed_records[:10]:
-            preview.append({h: record.get(h, "") for h in header_fields})
+        for record in records[:10]:
+            preview.append({
+                field: str(record.get(field, ""))
+                for field in header_fields
+            })
 
         return JsonResponse({
             "headers": mapped_headers,
             "preview": preview,
-            "total_parsed": len(parsed_records),
+            "total_parsed": len(records),
             "errors": errors[:20],
         })
