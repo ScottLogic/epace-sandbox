@@ -22,12 +22,18 @@
   --bg0: rgb(21, 11, 0);
   --bg1: rgb(35, 34, 34);
   --bg2:  rgb(71, 70, 69);
+  --bg3: rgb(117, 116, 115);
 
-  --theme-light: var(--mtg-light-white);
-  --theme-dark: var(--mtg-dark-white);
   --text: var(--mtg-dark-white);
-  --text-dark: var(--bg1);
-  --subtext: var(--mtg-light-white);
+  --subtext: rgb(203, 204, 196);
+
+  --highlight:  var(--mtg-light-white);
+  --highlight-inverse: var(--bg2);
+  --accent: var(--mtg-light-blue);
+  --accent-hover: var(--mtg-dark-blue);
+  --border-color: var(--mtg-dark-white);
+  --warning: rgb(194, 94, 55);
+  --success: #27ae60;
 
 }
 
