@@ -81,7 +81,7 @@
       var bgColor = f.required && !isMapped ? '#fff3cd' : (isMapped ? '#d4edda' : '#fff');
       tr.style.backgroundColor = bgColor;
       tr.innerHTML =
-        '<td style="padding: 4px 8px; border-bottom: 1px solid #eee;">' + f.name + (f.required ? ' <strong style="color: #c00;">*</strong>' : '') + '</td>' +
+        '<td style="color: black; padding: 4px 8px; border-bottom: 1px solid #eee;">' + f.name + (f.required ? ' <strong style="color: #c00;">*</strong>' : '') + '</td>' +
         '<td style="padding: 4px 8px; border-bottom: 1px solid #eee; font-size: 0.85em; color: #666;">' + f.type + '</td>' +
         '<td style="text-align: center; padding: 4px 8px; border-bottom: 1px solid #eee;">' + (f.required ? 'Yes' : 'No') + '</td>' +
         '<td style="text-align: center; padding: 4px 8px; border-bottom: 1px solid #eee;">' + (isMapped ? '&#10003;' : '&#10007;') + '</td>';
