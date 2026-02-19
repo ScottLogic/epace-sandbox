@@ -63,6 +63,7 @@
           });
           html += '</ul></div>';
         }
+        var fields = data.header_fields || data.headers;
         if (data.preview && data.preview.length > 0) {
           html += '<p style="margin-bottom: 5px;"><strong>Preview (' + data.total_parsed + ' row(s) parsed, showing first ' + data.preview.length + '):</strong></p>';
           html += '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">';
@@ -73,8 +74,8 @@
           html += '</tr></thead><tbody>';
           data.preview.forEach(function(row) {
             html += '<tr>';
-            data.headers.forEach(function(h) {
-              html += '<td style="padding: 4px 10px; border: 1px solid #eee;">' + (row[h] !== undefined ? row[h] : '') + '</td>';
+            fields.forEach(function(f) {
+              html += '<td style="padding: 4px 10px; border: 1px solid #eee;">' + (row[f] !== undefined ? row[f] : '') + '</td>';
             });
             html += '</tr>';
           });
